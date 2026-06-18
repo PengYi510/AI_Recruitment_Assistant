@@ -1,0 +1,2145 @@
+{
+  "_metadata": {
+    "description": "海外高校权威排名知识库 - QS 2025 与 U.S. News 2024-2025 前150名，用于HR智能匹配中对留学经历候选人的院校质量评估",
+    "tier_mapping_rule": {
+      "top_1_50": "QS Top 50",
+      "top_51_100": "QS Top 100",
+      "top_101_200": "QS Top 200",
+      "top_201_500": "QS Top 500",
+      "note": "两个榜单取更优名次（更小rank）所对应的 QS 层级标签，不再映射到国内 985/211/双一流"
+    },
+    "naming_convention": "校名采用 英文(中文) 双语，display字段可直接用于简历文本",
+    "source": [
+      "QS World University Rankings 2025",
+      "U.S. News Best Global Universities 2024-2025"
+    ],
+    "total_universities": 212,
+    "tier_distribution": {
+      "985": 72,
+      "211": 77,
+      "双一流": 63
+    }
+  },
+  "universities": [
+    {
+      "name_en": "Massachusetts Institute of Technology",
+      "name_cn": "麻省理工学院",
+      "display": "Massachusetts Institute of Technology(麻省理工学院)",
+      "country": "美国",
+      "qs_2025_rank": 1,
+      "usnews_2025_rank": 2,
+      "best_rank": 1,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Harvard University",
+      "name_cn": "哈佛大学",
+      "display": "Harvard University(哈佛大学)",
+      "country": "美国",
+      "qs_2025_rank": 4,
+      "usnews_2025_rank": 1,
+      "best_rank": 1,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Imperial College London",
+      "name_cn": "帝国理工学院",
+      "display": "Imperial College London(帝国理工学院)",
+      "country": "英国",
+      "qs_2025_rank": 2,
+      "usnews_2025_rank": 18,
+      "best_rank": 2,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Oxford",
+      "name_cn": "牛津大学",
+      "display": "University of Oxford(牛津大学)",
+      "country": "英国",
+      "qs_2025_rank": 3,
+      "usnews_2025_rank": 4,
+      "best_rank": 3,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Stanford University",
+      "name_cn": "斯坦福大学",
+      "display": "Stanford University(斯坦福大学)",
+      "country": "美国",
+      "qs_2025_rank": 6,
+      "usnews_2025_rank": 3,
+      "best_rank": 3,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Cambridge",
+      "name_cn": "剑桥大学",
+      "display": "University of Cambridge(剑桥大学)",
+      "country": "英国",
+      "qs_2025_rank": 5,
+      "usnews_2025_rank": 6,
+      "best_rank": 5,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of California, Berkeley",
+      "name_cn": "加州大学伯克利分校",
+      "display": "University of California, Berkeley(加州大学伯克利分校)",
+      "country": "美国",
+      "qs_2025_rank": 12,
+      "usnews_2025_rank": 5,
+      "best_rank": 5,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "ETH Zurich",
+      "name_cn": "苏黎世联邦理工学院",
+      "display": "ETH Zurich(苏黎世联邦理工学院)",
+      "country": "瑞士",
+      "qs_2025_rank": 7,
+      "usnews_2025_rank": 23,
+      "best_rank": 7,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Washington",
+      "name_cn": "华盛顿大学",
+      "display": "University of Washington(华盛顿大学)",
+      "country": "美国",
+      "qs_2025_rank": 63,
+      "usnews_2025_rank": 7,
+      "best_rank": 7,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "National University of Singapore",
+      "name_cn": "新加坡国立大学",
+      "display": "National University of Singapore(新加坡国立大学)",
+      "country": "新加坡",
+      "qs_2025_rank": 8,
+      "usnews_2025_rank": 28,
+      "best_rank": 8,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Princeton University",
+      "name_cn": "普林斯顿大学",
+      "display": "Princeton University(普林斯顿大学)",
+      "country": "美国",
+      "qs_2025_rank": 22,
+      "usnews_2025_rank": 8,
+      "best_rank": 8,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University College London",
+      "name_cn": "伦敦大学学院",
+      "display": "University College London(伦敦大学学院)",
+      "country": "英国",
+      "qs_2025_rank": 9,
+      "usnews_2025_rank": 20,
+      "best_rank": 9,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Yale University",
+      "name_cn": "耶鲁大学",
+      "display": "Yale University(耶鲁大学)",
+      "country": "美国",
+      "qs_2025_rank": 23,
+      "usnews_2025_rank": 9,
+      "best_rank": 9,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "California Institute of Technology",
+      "name_cn": "加州理工学院",
+      "display": "California Institute of Technology(加州理工学院)",
+      "country": "美国",
+      "qs_2025_rank": 10,
+      "usnews_2025_rank": 10,
+      "best_rank": 10,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Pennsylvania",
+      "name_cn": "宾夕法尼亚大学",
+      "display": "University of Pennsylvania(宾夕法尼亚大学)",
+      "country": "美国",
+      "qs_2025_rank": 11,
+      "usnews_2025_rank": 12,
+      "best_rank": 11,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Columbia University",
+      "name_cn": "哥伦比亚大学",
+      "display": "Columbia University(哥伦比亚大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 11,
+      "best_rank": 11,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Melbourne",
+      "name_cn": "墨尔本大学",
+      "display": "The University of Melbourne(墨尔本大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 13,
+      "usnews_2025_rank": null,
+      "best_rank": 13,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of California, Los Angeles",
+      "name_cn": "加州大学洛杉矶分校",
+      "display": "University of California, Los Angeles(加州大学洛杉矶分校)",
+      "country": "美国",
+      "qs_2025_rank": 39,
+      "usnews_2025_rank": 13,
+      "best_rank": 13,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Peking University",
+      "name_cn": "北京大学",
+      "display": "Peking University(北京大学)",
+      "country": "中国",
+      "qs_2025_rank": 14,
+      "usnews_2025_rank": 24,
+      "best_rank": 14,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Johns Hopkins University",
+      "name_cn": "约翰斯·霍普金斯大学",
+      "display": "Johns Hopkins University(约翰斯·霍普金斯大学)",
+      "country": "美国",
+      "qs_2025_rank": 32,
+      "usnews_2025_rank": 14,
+      "best_rank": 14,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Nanyang Technological University",
+      "name_cn": "南洋理工大学",
+      "display": "Nanyang Technological University(南洋理工大学)",
+      "country": "新加坡",
+      "qs_2025_rank": 15,
+      "usnews_2025_rank": 59,
+      "best_rank": 15,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of California, San Francisco",
+      "name_cn": "加州大学旧金山分校",
+      "display": "University of California, San Francisco(加州大学旧金山分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 15,
+      "best_rank": 15,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Cornell University",
+      "name_cn": "康奈尔大学",
+      "display": "Cornell University(康奈尔大学)",
+      "country": "美国",
+      "qs_2025_rank": 16,
+      "usnews_2025_rank": 21,
+      "best_rank": 16,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Tsinghua University",
+      "name_cn": "清华大学",
+      "display": "Tsinghua University(清华大学)",
+      "country": "中国",
+      "qs_2025_rank": 20,
+      "usnews_2025_rank": 16,
+      "best_rank": 16,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Hong Kong",
+      "name_cn": "香港大学",
+      "display": "The University of Hong Kong(香港大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 17,
+      "usnews_2025_rank": null,
+      "best_rank": 17,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Toronto",
+      "name_cn": "多伦多大学",
+      "display": "University of Toronto(多伦多大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 24,
+      "usnews_2025_rank": 17,
+      "best_rank": 17,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Sydney",
+      "name_cn": "悉尼大学",
+      "display": "The University of Sydney(悉尼大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 18,
+      "usnews_2025_rank": null,
+      "best_rank": 18,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of New South Wales",
+      "name_cn": "新南威尔士大学",
+      "display": "University of New South Wales(新南威尔士大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 19,
+      "usnews_2025_rank": 58,
+      "best_rank": 19,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Michigan-Ann Arbor",
+      "name_cn": "密歇根大学安娜堡分校",
+      "display": "University of Michigan-Ann Arbor(密歇根大学安娜堡分校)",
+      "country": "美国",
+      "qs_2025_rank": 44,
+      "usnews_2025_rank": 19,
+      "best_rank": 19,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Chicago",
+      "name_cn": "芝加哥大学",
+      "display": "University of Chicago(芝加哥大学)",
+      "country": "美国",
+      "qs_2025_rank": 21,
+      "usnews_2025_rank": 22,
+      "best_rank": 21,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Edinburgh",
+      "name_cn": "爱丁堡大学",
+      "display": "The University of Edinburgh(爱丁堡大学)",
+      "country": "英国",
+      "qs_2025_rank": 25,
+      "usnews_2025_rank": null,
+      "best_rank": 25,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Duke University",
+      "name_cn": "杜克大学",
+      "display": "Duke University(杜克大学)",
+      "country": "美国",
+      "qs_2025_rank": 57,
+      "usnews_2025_rank": 25,
+      "best_rank": 25,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Ecole Polytechnique Federale de Lausanne",
+      "name_cn": "洛桑联邦理工学院",
+      "display": "Ecole Polytechnique Federale de Lausanne(洛桑联邦理工学院)",
+      "country": "瑞士",
+      "qs_2025_rank": 26,
+      "usnews_2025_rank": null,
+      "best_rank": 26,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Northwestern University",
+      "name_cn": "西北大学（美国）",
+      "display": "Northwestern University(西北大学（美国）)",
+      "country": "美国",
+      "qs_2025_rank": 59,
+      "usnews_2025_rank": 26,
+      "best_rank": 26,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Manchester",
+      "name_cn": "曼彻斯特大学",
+      "display": "The University of Manchester(曼彻斯特大学)",
+      "country": "英国",
+      "qs_2025_rank": 27,
+      "usnews_2025_rank": null,
+      "best_rank": 27,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of California, San Diego",
+      "name_cn": "加州大学圣地亚哥分校",
+      "display": "University of California, San Diego(加州大学圣地亚哥分校)",
+      "country": "美国",
+      "qs_2025_rank": 58,
+      "usnews_2025_rank": 27,
+      "best_rank": 27,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The Hong Kong University of Science and Technology",
+      "name_cn": "香港科技大学",
+      "display": "The Hong Kong University of Science and Technology(香港科技大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 28,
+      "usnews_2025_rank": null,
+      "best_rank": 28,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Australian National University",
+      "name_cn": "澳大利亚国立大学",
+      "display": "Australian National University(澳大利亚国立大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 29,
+      "usnews_2025_rank": 64,
+      "best_rank": 29,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "New York University",
+      "name_cn": "纽约大学",
+      "display": "New York University(纽约大学)",
+      "country": "美国",
+      "qs_2025_rank": 46,
+      "usnews_2025_rank": 29,
+      "best_rank": 29,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "McGill University",
+      "name_cn": "麦吉尔大学",
+      "display": "McGill University(麦吉尔大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 30,
+      "usnews_2025_rank": 61,
+      "best_rank": 30,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Melbourne",
+      "name_cn": "墨尔本大学",
+      "display": "University of Melbourne(墨尔本大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 30,
+      "best_rank": 30,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Technical University of Munich",
+      "name_cn": "慕尼黑工业大学",
+      "display": "Technical University of Munich(慕尼黑工业大学)",
+      "country": "德国",
+      "qs_2025_rank": 31,
+      "usnews_2025_rank": 48,
+      "best_rank": 31,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Edinburgh",
+      "name_cn": "爱丁堡大学",
+      "display": "University of Edinburgh(爱丁堡大学)",
+      "country": "英国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 31,
+      "best_rank": 31,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Zhejiang University",
+      "name_cn": "浙江大学",
+      "display": "Zhejiang University(浙江大学)",
+      "country": "中国",
+      "qs_2025_rank": 37,
+      "usnews_2025_rank": 32,
+      "best_rank": 32,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Seoul National University",
+      "name_cn": "首尔国立大学",
+      "display": "Seoul National University(首尔国立大学)",
+      "country": "韩国",
+      "qs_2025_rank": 33,
+      "usnews_2025_rank": 91,
+      "best_rank": 33,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Shanghai Jiao Tong University",
+      "name_cn": "上海交通大学",
+      "display": "Shanghai Jiao Tong University(上海交通大学)",
+      "country": "中国",
+      "qs_2025_rank": 40,
+      "usnews_2025_rank": 33,
+      "best_rank": 33,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of Tokyo",
+      "name_cn": "东京大学",
+      "display": "The University of Tokyo(东京大学)",
+      "country": "日本",
+      "qs_2025_rank": 34,
+      "usnews_2025_rank": null,
+      "best_rank": 34,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of British Columbia",
+      "name_cn": "英属哥伦比亚大学",
+      "display": "University of British Columbia(英属哥伦比亚大学)",
+      "country": "加拿大",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 34,
+      "best_rank": 34,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The University of British Columbia",
+      "name_cn": "英属哥伦比亚大学",
+      "display": "The University of British Columbia(英属哥伦比亚大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 35,
+      "usnews_2025_rank": null,
+      "best_rank": 35,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Washington University in St. Louis",
+      "name_cn": "圣路易斯华盛顿大学",
+      "display": "Washington University in St. Louis(圣路易斯华盛顿大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 35,
+      "best_rank": 35,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Fudan University",
+      "name_cn": "复旦大学",
+      "display": "Fudan University(复旦大学)",
+      "country": "中国",
+      "qs_2025_rank": 36,
+      "usnews_2025_rank": 46,
+      "best_rank": 36,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Sorbonne University",
+      "name_cn": "索邦大学",
+      "display": "Sorbonne University(索邦大学)",
+      "country": "法国",
+      "qs_2025_rank": 48,
+      "usnews_2025_rank": 36,
+      "best_rank": 36,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Wisconsin-Madison",
+      "name_cn": "威斯康星大学麦迪逊分校",
+      "display": "University of Wisconsin-Madison(威斯康星大学麦迪逊分校)",
+      "country": "美国",
+      "qs_2025_rank": 96,
+      "usnews_2025_rank": 37,
+      "best_rank": 37,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "King's College London",
+      "name_cn": "伦敦国王学院",
+      "display": "King's College London(伦敦国王学院)",
+      "country": "英国",
+      "qs_2025_rank": 38,
+      "usnews_2025_rank": 55,
+      "best_rank": 38,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Sydney",
+      "name_cn": "悉尼大学",
+      "display": "University of Sydney(悉尼大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 38,
+      "best_rank": 38,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Chinese University of Hong Kong",
+      "name_cn": "香港中文大学",
+      "display": "Chinese University of Hong Kong(香港中文大学)",
+      "country": "中国香港",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 39,
+      "best_rank": 39,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Texas at Austin",
+      "name_cn": "德克萨斯大学奥斯汀分校",
+      "display": "University of Texas at Austin(德克萨斯大学奥斯汀分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 40,
+      "best_rank": 40,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Universite PSL",
+      "name_cn": "巴黎文理研究大学",
+      "display": "Universite PSL(巴黎文理研究大学)",
+      "country": "法国",
+      "qs_2025_rank": 41,
+      "usnews_2025_rank": null,
+      "best_rank": 41,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Hong Kong",
+      "name_cn": "香港大学",
+      "display": "University of Hong Kong(香港大学)",
+      "country": "中国香港",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 41,
+      "best_rank": 41,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Kyoto University",
+      "name_cn": "京都大学",
+      "display": "Kyoto University(京都大学)",
+      "country": "日本",
+      "qs_2025_rank": 42,
+      "usnews_2025_rank": 53,
+      "best_rank": 42,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Munich",
+      "name_cn": "慕尼黑大学",
+      "display": "University of Munich(慕尼黑大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 42,
+      "best_rank": 42,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Korea Advanced Institute of Science and Technology",
+      "name_cn": "韩国科学技术院",
+      "display": "Korea Advanced Institute of Science and Technology(韩国科学技术院)",
+      "country": "韩国",
+      "qs_2025_rank": 43,
+      "usnews_2025_rank": null,
+      "best_rank": 43,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Queensland",
+      "name_cn": "昆士兰大学",
+      "display": "University of Queensland(昆士兰大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 43,
+      "best_rank": 43,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of North Carolina at Chapel Hill",
+      "name_cn": "北卡罗来纳大学教堂山分校",
+      "display": "University of North Carolina at Chapel Hill(北卡罗来纳大学教堂山分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 44,
+      "best_rank": 44,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The Chinese University of Hong Kong",
+      "name_cn": "香港中文大学",
+      "display": "The Chinese University of Hong Kong(香港中文大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 45,
+      "usnews_2025_rank": null,
+      "best_rank": 45,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Karolinska Institute",
+      "name_cn": "卡罗林斯卡学院",
+      "display": "Karolinska Institute(卡罗林斯卡学院)",
+      "country": "瑞典",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 45,
+      "best_rank": 45,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "The Hong Kong Polytechnic University",
+      "name_cn": "香港理工大学",
+      "display": "The Hong Kong Polytechnic University(香港理工大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 47,
+      "usnews_2025_rank": null,
+      "best_rank": 47,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Minnesota Twin Cities",
+      "name_cn": "明尼苏达大学双城分校",
+      "display": "University of Minnesota Twin Cities(明尼苏达大学双城分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 47,
+      "best_rank": 47,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Universiti Malaya",
+      "name_cn": "马来亚大学",
+      "display": "Universiti Malaya(马来亚大学)",
+      "country": "马来西亚",
+      "qs_2025_rank": 49,
+      "usnews_2025_rank": null,
+      "best_rank": 49,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Manchester",
+      "name_cn": "曼彻斯特大学",
+      "display": "University of Manchester(曼彻斯特大学)",
+      "country": "英国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 49,
+      "best_rank": 49,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Institut Polytechnique de Paris",
+      "name_cn": "巴黎综合理工学院",
+      "display": "Institut Polytechnique de Paris(巴黎综合理工学院)",
+      "country": "法国",
+      "qs_2025_rank": 50,
+      "usnews_2025_rank": null,
+      "best_rank": 50,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "University of Pittsburgh",
+      "name_cn": "匹兹堡大学",
+      "display": "University of Pittsburgh(匹兹堡大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 50,
+      "best_rank": 50,
+      "equiv_tier": "985"
+    },
+    {
+      "name_en": "Monash University",
+      "name_cn": "莫纳什大学",
+      "display": "Monash University(莫纳什大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 55,
+      "usnews_2025_rank": 51,
+      "best_rank": 51,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Amsterdam",
+      "name_cn": "阿姆斯特丹大学",
+      "display": "University of Amsterdam(阿姆斯特丹大学)",
+      "country": "荷兰",
+      "qs_2025_rank": 52,
+      "usnews_2025_rank": 73,
+      "best_rank": 52,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Heidelberg University",
+      "name_cn": "海德堡大学",
+      "display": "Heidelberg University(海德堡大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 52,
+      "best_rank": 52,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Nanjing University",
+      "name_cn": "南京大学",
+      "display": "Nanjing University(南京大学)",
+      "country": "中国",
+      "qs_2025_rank": 53,
+      "usnews_2025_rank": 83,
+      "best_rank": 53,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Delft University of Technology",
+      "name_cn": "代尔夫特理工大学",
+      "display": "Delft University of Technology(代尔夫特理工大学)",
+      "country": "荷兰",
+      "qs_2025_rank": 54,
+      "usnews_2025_rank": 113,
+      "best_rank": 54,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Copenhagen",
+      "name_cn": "哥本哈根大学",
+      "display": "University of Copenhagen(哥本哈根大学)",
+      "country": "丹麦",
+      "qs_2025_rank": 92,
+      "usnews_2025_rank": 54,
+      "best_rank": 54,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The University of Texas at Austin",
+      "name_cn": "德克萨斯大学奥斯汀分校",
+      "display": "The University of Texas at Austin(德克萨斯大学奥斯汀分校)",
+      "country": "美国",
+      "qs_2025_rank": 56,
+      "usnews_2025_rank": null,
+      "best_rank": 56,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Science and Technology of China",
+      "name_cn": "中国科学技术大学",
+      "display": "University of Science and Technology of China(中国科学技术大学)",
+      "country": "中国",
+      "qs_2025_rank": 136,
+      "usnews_2025_rank": 56,
+      "best_rank": 56,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Maryland, College Park",
+      "name_cn": "马里兰大学帕克分校",
+      "display": "University of Maryland, College Park(马里兰大学帕克分校)",
+      "country": "美国",
+      "qs_2025_rank": 128,
+      "usnews_2025_rank": 57,
+      "best_rank": 57,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The University of Queensland",
+      "name_cn": "昆士兰大学",
+      "display": "The University of Queensland(昆士兰大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 60,
+      "usnews_2025_rank": null,
+      "best_rank": 60,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Tokyo",
+      "name_cn": "东京大学",
+      "display": "University of Tokyo(东京大学)",
+      "country": "日本",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 60,
+      "best_rank": 60,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Carnegie Mellon University",
+      "name_cn": "卡内基梅隆大学",
+      "display": "Carnegie Mellon University(卡内基梅隆大学)",
+      "country": "美国",
+      "qs_2025_rank": 61,
+      "usnews_2025_rank": 82,
+      "best_rank": 61,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "City University of Hong Kong",
+      "name_cn": "香港城市大学",
+      "display": "City University of Hong Kong(香港城市大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 62,
+      "usnews_2025_rank": 142,
+      "best_rank": 62,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Southern California",
+      "name_cn": "南加州大学",
+      "display": "University of Southern California(南加州大学)",
+      "country": "美国",
+      "qs_2025_rank": 144,
+      "usnews_2025_rank": 62,
+      "best_rank": 62,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Boston University",
+      "name_cn": "波士顿大学",
+      "display": "Boston University(波士顿大学)",
+      "country": "美国",
+      "qs_2025_rank": 89,
+      "usnews_2025_rank": 63,
+      "best_rank": 63,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Ludwig-Maximilians-Universitat Munchen",
+      "name_cn": "慕尼黑大学",
+      "display": "Ludwig-Maximilians-Universitat Munchen(慕尼黑大学)",
+      "country": "德国",
+      "qs_2025_rank": 64,
+      "usnews_2025_rank": null,
+      "best_rank": 64,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Illinois at Urbana-Champaign",
+      "name_cn": "伊利诺伊大学厄巴纳-香槟分校",
+      "display": "University of Illinois at Urbana-Champaign(伊利诺伊大学厄巴纳-香槟分校)",
+      "country": "美国",
+      "qs_2025_rank": 65,
+      "usnews_2025_rank": null,
+      "best_rank": 65,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Sun Yat-sen University",
+      "name_cn": "中山大学",
+      "display": "Sun Yat-sen University(中山大学)",
+      "country": "中国",
+      "qs_2025_rank": 149,
+      "usnews_2025_rank": 65,
+      "best_rank": 65,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The London School of Economics and Political Science",
+      "name_cn": "伦敦政治经济学院",
+      "display": "The London School of Economics and Political Science(伦敦政治经济学院)",
+      "country": "英国",
+      "qs_2025_rank": 66,
+      "usnews_2025_rank": null,
+      "best_rank": 66,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Huazhong University of Science and Technology",
+      "name_cn": "华中科技大学",
+      "display": "Huazhong University of Science and Technology(华中科技大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 66,
+      "best_rank": 66,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The University of Warwick",
+      "name_cn": "华威大学",
+      "display": "The University of Warwick(华威大学)",
+      "country": "英国",
+      "qs_2025_rank": 67,
+      "usnews_2025_rank": null,
+      "best_rank": 67,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Purdue University",
+      "name_cn": "普渡大学",
+      "display": "Purdue University(普渡大学)",
+      "country": "美国",
+      "qs_2025_rank": 118,
+      "usnews_2025_rank": 67,
+      "best_rank": 67,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The University of Auckland",
+      "name_cn": "奥克兰大学",
+      "display": "The University of Auckland(奥克兰大学)",
+      "country": "新西兰",
+      "qs_2025_rank": 68,
+      "usnews_2025_rank": null,
+      "best_rank": 68,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of California, Davis",
+      "name_cn": "加州大学戴维斯分校",
+      "display": "University of California, Davis(加州大学戴维斯分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 68,
+      "best_rank": 68,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "National Taiwan University",
+      "name_cn": "台湾大学",
+      "display": "National Taiwan University(台湾大学)",
+      "country": "中国台湾",
+      "qs_2025_rank": 69,
+      "usnews_2025_rank": null,
+      "best_rank": 69,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Ohio State University",
+      "name_cn": "俄亥俄州立大学",
+      "display": "Ohio State University(俄亥俄州立大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 69,
+      "best_rank": 69,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universidad de Buenos Aires",
+      "name_cn": "布宜诺斯艾利斯大学",
+      "display": "Universidad de Buenos Aires(布宜诺斯艾利斯大学)",
+      "country": "阿根廷",
+      "qs_2025_rank": 70,
+      "usnews_2025_rank": null,
+      "best_rank": 70,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Xi'an Jiaotong University",
+      "name_cn": "西安交通大学",
+      "display": "Xi'an Jiaotong University(西安交通大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 70,
+      "best_rank": 70,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Brown University",
+      "name_cn": "布朗大学",
+      "display": "Brown University(布朗大学)",
+      "country": "美国",
+      "qs_2025_rank": 71,
+      "usnews_2025_rank": null,
+      "best_rank": 71,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Wuhan University",
+      "name_cn": "武汉大学",
+      "display": "Wuhan University(武汉大学)",
+      "country": "中国",
+      "qs_2025_rank": 113,
+      "usnews_2025_rank": 71,
+      "best_rank": 71,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "KU Leuven",
+      "name_cn": "鲁汶大学",
+      "display": "KU Leuven(鲁汶大学)",
+      "country": "比利时",
+      "qs_2025_rank": 72,
+      "usnews_2025_rank": 74,
+      "best_rank": 72,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Utrecht University",
+      "name_cn": "乌得勒支大学",
+      "display": "Utrecht University(乌得勒支大学)",
+      "country": "荷兰",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 72,
+      "best_rank": 72,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Bristol",
+      "name_cn": "布里斯托大学",
+      "display": "University of Bristol(布里斯托大学)",
+      "country": "英国",
+      "qs_2025_rank": 73,
+      "usnews_2025_rank": 75,
+      "best_rank": 73,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Yonsei University",
+      "name_cn": "延世大学",
+      "display": "Yonsei University(延世大学)",
+      "country": "韩国",
+      "qs_2025_rank": 74,
+      "usnews_2025_rank": null,
+      "best_rank": 74,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Birmingham",
+      "name_cn": "伯明翰大学",
+      "display": "University of Birmingham(伯明翰大学)",
+      "country": "英国",
+      "qs_2025_rank": 75,
+      "usnews_2025_rank": 109,
+      "best_rank": 75,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Korea University",
+      "name_cn": "高丽大学",
+      "display": "Korea University(高丽大学)",
+      "country": "韩国",
+      "qs_2025_rank": 76,
+      "usnews_2025_rank": null,
+      "best_rank": 76,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Emory University",
+      "name_cn": "埃默里大学",
+      "display": "Emory University(埃默里大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 76,
+      "best_rank": 76,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Southampton",
+      "name_cn": "南安普顿大学",
+      "display": "University of Southampton(南安普顿大学)",
+      "country": "英国",
+      "qs_2025_rank": 77,
+      "usnews_2025_rank": 132,
+      "best_rank": 77,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Zurich",
+      "name_cn": "苏黎世大学",
+      "display": "University of Zurich(苏黎世大学)",
+      "country": "瑞士",
+      "qs_2025_rank": 87,
+      "usnews_2025_rank": 77,
+      "best_rank": 77,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Lund University",
+      "name_cn": "隆德大学",
+      "display": "Lund University(隆德大学)",
+      "country": "瑞典",
+      "qs_2025_rank": 78,
+      "usnews_2025_rank": 81,
+      "best_rank": 78,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Sichuan University",
+      "name_cn": "四川大学",
+      "display": "Sichuan University(四川大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 78,
+      "best_rank": 78,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Leeds",
+      "name_cn": "利兹大学",
+      "display": "University of Leeds(利兹大学)",
+      "country": "英国",
+      "qs_2025_rank": 79,
+      "usnews_2025_rank": 128,
+      "best_rank": 79,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Tongji University",
+      "name_cn": "同济大学",
+      "display": "Tongji University(同济大学)",
+      "country": "中国",
+      "qs_2025_rank": 130,
+      "usnews_2025_rank": 79,
+      "best_rank": 79,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The University of Western Australia",
+      "name_cn": "西澳大学",
+      "display": "The University of Western Australia(西澳大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 80,
+      "usnews_2025_rank": null,
+      "best_rank": 80,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Helsinki",
+      "name_cn": "赫尔辛基大学",
+      "display": "University of Helsinki(赫尔辛基大学)",
+      "country": "芬兰",
+      "qs_2025_rank": 129,
+      "usnews_2025_rank": 80,
+      "best_rank": 80,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Trinity College Dublin",
+      "name_cn": "都柏林圣三一学院",
+      "display": "Trinity College Dublin(都柏林圣三一学院)",
+      "country": "爱尔兰",
+      "qs_2025_rank": 81,
+      "usnews_2025_rank": 144,
+      "best_rank": 81,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universidad Nacional Autonoma de Mexico",
+      "name_cn": "墨西哥国立自治大学",
+      "display": "Universidad Nacional Autonoma de Mexico(墨西哥国立自治大学)",
+      "country": "墨西哥",
+      "qs_2025_rank": 82,
+      "usnews_2025_rank": null,
+      "best_rank": 82,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Pohang University of Science and Technology",
+      "name_cn": "浦项科技大学",
+      "display": "Pohang University of Science and Technology(浦项科技大学)",
+      "country": "韩国",
+      "qs_2025_rank": 83,
+      "usnews_2025_rank": null,
+      "best_rank": 83,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "The Pennsylvania State University",
+      "name_cn": "宾夕法尼亚州立大学",
+      "display": "The Pennsylvania State University(宾夕法尼亚州立大学)",
+      "country": "美国",
+      "qs_2025_rank": 84,
+      "usnews_2025_rank": null,
+      "best_rank": 84,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Oslo",
+      "name_cn": "奥斯陆大学",
+      "display": "University of Oslo(奥斯陆大学)",
+      "country": "挪威",
+      "qs_2025_rank": 133,
+      "usnews_2025_rank": 84,
+      "best_rank": 84,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Durham University",
+      "name_cn": "杜伦大学",
+      "display": "Durham University(杜伦大学)",
+      "country": "英国",
+      "qs_2025_rank": 85,
+      "usnews_2025_rank": null,
+      "best_rank": 85,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Erasmus University Rotterdam",
+      "name_cn": "鹿特丹伊拉斯姆斯大学",
+      "display": "Erasmus University Rotterdam(鹿特丹伊拉斯姆斯大学)",
+      "country": "荷兰",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 85,
+      "best_rank": 85,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Tokyo Institute of Technology",
+      "name_cn": "东京工业大学",
+      "display": "Tokyo Institute of Technology(东京工业大学)",
+      "country": "日本",
+      "qs_2025_rank": 86,
+      "usnews_2025_rank": null,
+      "best_rank": 86,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Aarhus University",
+      "name_cn": "奥胡斯大学",
+      "display": "Aarhus University(奥胡斯大学)",
+      "country": "丹麦",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 86,
+      "best_rank": 86,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Colorado Boulder",
+      "name_cn": "科罗拉多大学博尔德分校",
+      "display": "University of Colorado Boulder(科罗拉多大学博尔德分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 87,
+      "best_rank": 87,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of St Andrews",
+      "name_cn": "圣安德鲁斯大学",
+      "display": "University of St Andrews(圣安德鲁斯大学)",
+      "country": "英国",
+      "qs_2025_rank": 88,
+      "usnews_2025_rank": null,
+      "best_rank": 88,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Ghent University",
+      "name_cn": "根特大学",
+      "display": "Ghent University(根特大学)",
+      "country": "比利时",
+      "qs_2025_rank": 141,
+      "usnews_2025_rank": 88,
+      "best_rank": 88,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Michigan State University",
+      "name_cn": "密歇根州立大学",
+      "display": "Michigan State University(密歇根州立大学)",
+      "country": "美国",
+      "qs_2025_rank": 131,
+      "usnews_2025_rank": 89,
+      "best_rank": 89,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Osaka University",
+      "name_cn": "大阪大学",
+      "display": "Osaka University(大阪大学)",
+      "country": "日本",
+      "qs_2025_rank": 90,
+      "usnews_2025_rank": null,
+      "best_rank": 90,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Geneva",
+      "name_cn": "日内瓦大学",
+      "display": "University of Geneva(日内瓦大学)",
+      "country": "瑞士",
+      "qs_2025_rank": 142,
+      "usnews_2025_rank": 90,
+      "best_rank": 90,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Sungkyunkwan University",
+      "name_cn": "成均馆大学",
+      "display": "Sungkyunkwan University(成均馆大学)",
+      "country": "韩国",
+      "qs_2025_rank": 91,
+      "usnews_2025_rank": null,
+      "best_rank": 91,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Adelaide",
+      "name_cn": "阿德莱德大学",
+      "display": "University of Adelaide(阿德莱德大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 114,
+      "usnews_2025_rank": 92,
+      "best_rank": 92,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Technology Sydney",
+      "name_cn": "悉尼科技大学",
+      "display": "University of Technology Sydney(悉尼科技大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": 93,
+      "usnews_2025_rank": null,
+      "best_rank": 93,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Vanderbilt University",
+      "name_cn": "范德堡大学",
+      "display": "Vanderbilt University(范德堡大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 93,
+      "best_rank": 93,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universidade de Sao Paulo",
+      "name_cn": "圣保罗大学",
+      "display": "Universidade de Sao Paulo(圣保罗大学)",
+      "country": "巴西",
+      "qs_2025_rank": 94,
+      "usnews_2025_rank": null,
+      "best_rank": 94,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Pennsylvania State University",
+      "name_cn": "宾夕法尼亚州立大学",
+      "display": "Pennsylvania State University(宾夕法尼亚州立大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 94,
+      "best_rank": 94,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Tohoku University",
+      "name_cn": "东北大学（日本）",
+      "display": "Tohoku University(东北大学（日本）)",
+      "country": "日本",
+      "qs_2025_rank": 95,
+      "usnews_2025_rank": 147,
+      "best_rank": 95,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of California, Santa Barbara",
+      "name_cn": "加州大学圣塔芭芭拉分校",
+      "display": "University of California, Santa Barbara(加州大学圣塔芭芭拉分校)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 95,
+      "best_rank": 95,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Leiden University",
+      "name_cn": "莱顿大学",
+      "display": "Leiden University(莱顿大学)",
+      "country": "荷兰",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 96,
+      "best_rank": 96,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universiti Putra Malaysia",
+      "name_cn": "马来西亚博特拉大学",
+      "display": "Universiti Putra Malaysia(马来西亚博特拉大学)",
+      "country": "马来西亚",
+      "qs_2025_rank": 97,
+      "usnews_2025_rank": null,
+      "best_rank": 97,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Groningen",
+      "name_cn": "格罗宁根大学",
+      "display": "University of Groningen(格罗宁根大学)",
+      "country": "荷兰",
+      "qs_2025_rank": 119,
+      "usnews_2025_rank": 97,
+      "best_rank": 97,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Georgia Institute of Technology",
+      "name_cn": "佐治亚理工学院",
+      "display": "Georgia Institute of Technology(佐治亚理工学院)",
+      "country": "美国",
+      "qs_2025_rank": 98,
+      "usnews_2025_rank": null,
+      "best_rank": 98,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "University of Western Australia",
+      "name_cn": "西澳大学",
+      "display": "University of Western Australia(西澳大学)",
+      "country": "澳大利亚",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 98,
+      "best_rank": 98,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universiti Kebangsaan Malaysia",
+      "name_cn": "马来西亚国民大学",
+      "display": "Universiti Kebangsaan Malaysia(马来西亚国民大学)",
+      "country": "马来西亚",
+      "qs_2025_rank": 99,
+      "usnews_2025_rank": null,
+      "best_rank": 99,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Uppsala University",
+      "name_cn": "乌普萨拉大学",
+      "display": "Uppsala University(乌普萨拉大学)",
+      "country": "瑞典",
+      "qs_2025_rank": 132,
+      "usnews_2025_rank": 99,
+      "best_rank": 99,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "KTH Royal Institute of Technology",
+      "name_cn": "瑞典皇家理工学院",
+      "display": "KTH Royal Institute of Technology(瑞典皇家理工学院)",
+      "country": "瑞典",
+      "qs_2025_rank": 100,
+      "usnews_2025_rank": null,
+      "best_rank": 100,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Southern University of Science and Technology",
+      "name_cn": "南方科技大学",
+      "display": "Southern University of Science and Technology(南方科技大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 100,
+      "best_rank": 100,
+      "equiv_tier": "211"
+    },
+    {
+      "name_en": "Universiti Sains Malaysia",
+      "name_cn": "马来西亚理科大学",
+      "display": "Universiti Sains Malaysia(马来西亚理科大学)",
+      "country": "马来西亚",
+      "qs_2025_rank": 101,
+      "usnews_2025_rank": null,
+      "best_rank": 101,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Bonn",
+      "name_cn": "波恩大学",
+      "display": "University of Bonn(波恩大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 101,
+      "best_rank": 101,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Glasgow",
+      "name_cn": "格拉斯哥大学",
+      "display": "University of Glasgow(格拉斯哥大学)",
+      "country": "英国",
+      "qs_2025_rank": 102,
+      "usnews_2025_rank": 105,
+      "best_rank": 102,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Technical University of Denmark",
+      "name_cn": "丹麦技术大学",
+      "display": "Technical University of Denmark(丹麦技术大学)",
+      "country": "丹麦",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 102,
+      "best_rank": 102,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universite de Montreal",
+      "name_cn": "蒙特利尔大学",
+      "display": "Universite de Montreal(蒙特利尔大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 103,
+      "usnews_2025_rank": null,
+      "best_rank": 103,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Nottingham",
+      "name_cn": "诺丁汉大学",
+      "display": "University of Nottingham(诺丁汉大学)",
+      "country": "英国",
+      "qs_2025_rank": 105,
+      "usnews_2025_rank": 103,
+      "best_rank": 103,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Alberta",
+      "name_cn": "阿尔伯塔大学",
+      "display": "University of Alberta(阿尔伯塔大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 104,
+      "usnews_2025_rank": null,
+      "best_rank": 104,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Hong Kong University of Science and Technology",
+      "name_cn": "香港科技大学",
+      "display": "Hong Kong University of Science and Technology(香港科技大学)",
+      "country": "中国香港",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 104,
+      "best_rank": 104,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universiti Teknologi Malaysia",
+      "name_cn": "马来西亚理工大学",
+      "display": "Universiti Teknologi Malaysia(马来西亚理工大学)",
+      "country": "马来西亚",
+      "qs_2025_rank": 106,
+      "usnews_2025_rank": null,
+      "best_rank": 106,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "RWTH Aachen University",
+      "name_cn": "亚琛工业大学",
+      "display": "RWTH Aachen University(亚琛工业大学)",
+      "country": "德国",
+      "qs_2025_rank": 108,
+      "usnews_2025_rank": 106,
+      "best_rank": 106,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Pontificia Universidad Catolica de Chile",
+      "name_cn": "智利天主教大学",
+      "display": "Pontificia Universidad Catolica de Chile(智利天主教大学)",
+      "country": "智利",
+      "qs_2025_rank": 107,
+      "usnews_2025_rank": null,
+      "best_rank": 107,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Beijing Normal University",
+      "name_cn": "北京师范大学",
+      "display": "Beijing Normal University(北京师范大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 107,
+      "best_rank": 107,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Tianjin University",
+      "name_cn": "天津大学",
+      "display": "Tianjin University(天津大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 108,
+      "best_rank": 108,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Lomonosov Moscow State University",
+      "name_cn": "莫斯科国立罗蒙诺索夫大学",
+      "display": "Lomonosov Moscow State University(莫斯科国立罗蒙诺索夫大学)",
+      "country": "俄罗斯",
+      "qs_2025_rank": 109,
+      "usnews_2025_rank": 138,
+      "best_rank": 109,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Freie Universitaet Berlin",
+      "name_cn": "柏林自由大学",
+      "display": "Freie Universitaet Berlin(柏林自由大学)",
+      "country": "德国",
+      "qs_2025_rank": 110,
+      "usnews_2025_rank": null,
+      "best_rank": 110,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Bern",
+      "name_cn": "伯尔尼大学",
+      "display": "University of Bern(伯尔尼大学)",
+      "country": "瑞士",
+      "qs_2025_rank": 121,
+      "usnews_2025_rank": 110,
+      "best_rank": 110,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "King Abdulaziz University",
+      "name_cn": "阿卜杜勒阿齐兹国王大学",
+      "display": "King Abdulaziz University(阿卜杜勒阿齐兹国王大学)",
+      "country": "沙特阿拉伯",
+      "qs_2025_rank": 111,
+      "usnews_2025_rank": null,
+      "best_rank": 111,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Florida",
+      "name_cn": "佛罗里达大学",
+      "display": "University of Florida(佛罗里达大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 111,
+      "best_rank": 111,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Western University",
+      "name_cn": "西安大略大学",
+      "display": "Western University(西安大略大学)",
+      "country": "加拿大",
+      "qs_2025_rank": 112,
+      "usnews_2025_rank": null,
+      "best_rank": 112,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Karlsruhe Institute of Technology",
+      "name_cn": "卡尔斯鲁厄理工学院",
+      "display": "Karlsruhe Institute of Technology(卡尔斯鲁厄理工学院)",
+      "country": "德国",
+      "qs_2025_rank": 117,
+      "usnews_2025_rank": 112,
+      "best_rank": 112,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Rice University",
+      "name_cn": "莱斯大学",
+      "display": "Rice University(莱斯大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 114,
+      "best_rank": 114,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universidad de Chile",
+      "name_cn": "智利大学",
+      "display": "Universidad de Chile(智利大学)",
+      "country": "智利",
+      "qs_2025_rank": 115,
+      "usnews_2025_rank": null,
+      "best_rank": 115,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Stockholm University",
+      "name_cn": "斯德哥尔摩大学",
+      "display": "Stockholm University(斯德哥尔摩大学)",
+      "country": "瑞典",
+      "qs_2025_rank": 116,
+      "usnews_2025_rank": 115,
+      "best_rank": 115,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Southeast University",
+      "name_cn": "东南大学",
+      "display": "Southeast University(东南大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 116,
+      "best_rank": 116,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Arizona State University",
+      "name_cn": "亚利桑那州立大学",
+      "display": "Arizona State University(亚利桑那州立大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 117,
+      "best_rank": 117,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Harbin Institute of Technology",
+      "name_cn": "哈尔滨工业大学",
+      "display": "Harbin Institute of Technology(哈尔滨工业大学)",
+      "country": "中国",
+      "qs_2025_rank": 125,
+      "usnews_2025_rank": 118,
+      "best_rank": 118,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Radboud University Nijmegen",
+      "name_cn": "拉德堡德大学",
+      "display": "Radboud University Nijmegen(拉德堡德大学)",
+      "country": "荷兰",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 119,
+      "best_rank": 119,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "The Hong Kong Baptist University",
+      "name_cn": "香港浸会大学",
+      "display": "The Hong Kong Baptist University(香港浸会大学)",
+      "country": "中国香港",
+      "qs_2025_rank": 120,
+      "usnews_2025_rank": null,
+      "best_rank": 120,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Warwick",
+      "name_cn": "华威大学",
+      "display": "University of Warwick(华威大学)",
+      "country": "英国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 120,
+      "best_rank": 120,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Tel Aviv University",
+      "name_cn": "特拉维夫大学",
+      "display": "Tel Aviv University(特拉维夫大学)",
+      "country": "以色列",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 121,
+      "best_rank": 121,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Lancaster University",
+      "name_cn": "兰卡斯特大学",
+      "display": "Lancaster University(兰卡斯特大学)",
+      "country": "英国",
+      "qs_2025_rank": 122,
+      "usnews_2025_rank": null,
+      "best_rank": 122,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Vienna",
+      "name_cn": "维也纳大学",
+      "display": "University of Vienna(维也纳大学)",
+      "country": "奥地利",
+      "qs_2025_rank": 134,
+      "usnews_2025_rank": 122,
+      "best_rank": 122,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Cape Town",
+      "name_cn": "开普敦大学",
+      "display": "University of Cape Town(开普敦大学)",
+      "country": "南非",
+      "qs_2025_rank": 123,
+      "usnews_2025_rank": 137,
+      "best_rank": 123,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Beihang University",
+      "name_cn": "北京航空航天大学",
+      "display": "Beihang University(北京航空航天大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 123,
+      "best_rank": 123,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Eindhoven University of Technology",
+      "name_cn": "埃因霍温理工大学",
+      "display": "Eindhoven University of Technology(埃因霍温理工大学)",
+      "country": "荷兰",
+      "qs_2025_rank": 124,
+      "usnews_2025_rank": 125,
+      "best_rank": 124,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Hebrew University of Jerusalem",
+      "name_cn": "希伯来大学",
+      "display": "Hebrew University of Jerusalem(希伯来大学)",
+      "country": "以色列",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 124,
+      "best_rank": 124,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Aalto University",
+      "name_cn": "阿尔托大学",
+      "display": "Aalto University(阿尔托大学)",
+      "country": "芬兰",
+      "qs_2025_rank": 126,
+      "usnews_2025_rank": 136,
+      "best_rank": 126,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Shandong University",
+      "name_cn": "山东大学",
+      "display": "Shandong University(山东大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 126,
+      "best_rank": 126,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universidad Autonoma de Madrid",
+      "name_cn": "马德里自治大学",
+      "display": "Universidad Autonoma de Madrid(马德里自治大学)",
+      "country": "西班牙",
+      "qs_2025_rank": 127,
+      "usnews_2025_rank": null,
+      "best_rank": 127,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Sheffield",
+      "name_cn": "谢菲尔德大学",
+      "display": "University of Sheffield(谢菲尔德大学)",
+      "country": "英国",
+      "qs_2025_rank": 135,
+      "usnews_2025_rank": 127,
+      "best_rank": 127,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Barcelona",
+      "name_cn": "巴塞罗那大学",
+      "display": "University of Barcelona(巴塞罗那大学)",
+      "country": "西班牙",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 129,
+      "best_rank": 129,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universite Paris-Saclay",
+      "name_cn": "巴黎萨克雷大学",
+      "display": "Universite Paris-Saclay(巴黎萨克雷大学)",
+      "country": "法国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 130,
+      "best_rank": 130,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Dalian University of Technology",
+      "name_cn": "大连理工大学",
+      "display": "Dalian University of Technology(大连理工大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 131,
+      "best_rank": 131,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Jilin University",
+      "name_cn": "吉林大学",
+      "display": "Jilin University(吉林大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 133,
+      "best_rank": 133,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Xiamen University",
+      "name_cn": "厦门大学",
+      "display": "Xiamen University(厦门大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 134,
+      "best_rank": 134,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Goettingen",
+      "name_cn": "哥廷根大学",
+      "display": "University of Goettingen(哥廷根大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 135,
+      "best_rank": 135,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Cardiff University",
+      "name_cn": "卡迪夫大学",
+      "display": "Cardiff University(卡迪夫大学)",
+      "country": "英国",
+      "qs_2025_rank": 137,
+      "usnews_2025_rank": 148,
+      "best_rank": 137,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Humboldt-Universitat zu Berlin",
+      "name_cn": "柏林洪堡大学",
+      "display": "Humboldt-Universitat zu Berlin(柏林洪堡大学)",
+      "country": "德国",
+      "qs_2025_rank": 138,
+      "usnews_2025_rank": null,
+      "best_rank": 138,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Bath",
+      "name_cn": "巴斯大学",
+      "display": "University of Bath(巴斯大学)",
+      "country": "英国",
+      "qs_2025_rank": 139,
+      "usnews_2025_rank": null,
+      "best_rank": 139,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Central South University",
+      "name_cn": "中南大学",
+      "display": "Central South University(中南大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 139,
+      "best_rank": 139,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universita di Bologna",
+      "name_cn": "博洛尼亚大学",
+      "display": "Universita di Bologna(博洛尼亚大学)",
+      "country": "意大利",
+      "qs_2025_rank": 140,
+      "usnews_2025_rank": null,
+      "best_rank": 140,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Hunan University",
+      "name_cn": "湖南大学",
+      "display": "Hunan University(湖南大学)",
+      "country": "中国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 140,
+      "best_rank": 140,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Freiburg",
+      "name_cn": "弗莱堡大学",
+      "display": "University of Freiburg(弗莱堡大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 141,
+      "best_rank": 141,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Universita degli Studi di Padova",
+      "name_cn": "帕多瓦大学",
+      "display": "Universita degli Studi di Padova(帕多瓦大学)",
+      "country": "意大利",
+      "qs_2025_rank": 143,
+      "usnews_2025_rank": null,
+      "best_rank": 143,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Notre Dame",
+      "name_cn": "圣母大学",
+      "display": "University of Notre Dame(圣母大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 143,
+      "best_rank": 143,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Sapienza University of Rome",
+      "name_cn": "罗马第一大学",
+      "display": "Sapienza University of Rome(罗马第一大学)",
+      "country": "意大利",
+      "qs_2025_rank": 145,
+      "usnews_2025_rank": null,
+      "best_rank": 145,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Tubingen",
+      "name_cn": "图宾根大学",
+      "display": "University of Tubingen(图宾根大学)",
+      "country": "德国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 145,
+      "best_rank": 145,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Indian Institute of Technology Bombay",
+      "name_cn": "印度理工学院孟买分校",
+      "display": "Indian Institute of Technology Bombay(印度理工学院孟买分校)",
+      "country": "印度",
+      "qs_2025_rank": 146,
+      "usnews_2025_rank": null,
+      "best_rank": 146,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Rochester",
+      "name_cn": "罗切斯特大学",
+      "display": "University of Rochester(罗切斯特大学)",
+      "country": "美国",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 146,
+      "best_rank": 146,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Queen Mary University of London",
+      "name_cn": "伦敦玛丽女王大学",
+      "display": "Queen Mary University of London(伦敦玛丽女王大学)",
+      "country": "英国",
+      "qs_2025_rank": 147,
+      "usnews_2025_rank": null,
+      "best_rank": 147,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "University of Basel",
+      "name_cn": "巴塞尔大学",
+      "display": "University of Basel(巴塞尔大学)",
+      "country": "瑞士",
+      "qs_2025_rank": 148,
+      "usnews_2025_rank": null,
+      "best_rank": 148,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Indian Institute of Science",
+      "name_cn": "印度科学理工学院",
+      "display": "Indian Institute of Science(印度科学理工学院)",
+      "country": "印度",
+      "qs_2025_rank": null,
+      "usnews_2025_rank": 149,
+      "best_rank": 149,
+      "equiv_tier": "双一流"
+    },
+    {
+      "name_en": "Newcastle University",
+      "name_cn": "纽卡斯尔大学",
+      "display": "Newcastle University(纽卡斯尔大学)",
+      "country": "英国",
+      "qs_2025_rank": 150,
+      "usnews_2025_rank": 150,
+      "best_rank": 150,
+      "equiv_tier": "双一流"
+    }
+  ]
+}

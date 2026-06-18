@@ -1,0 +1,15 @@
+# Harness-Driven Multimodal Hierarchical Fusion Intelligent Recruitment Matching System
+# 开发 / 测试依赖 (Development & Testing Dependencies)
+#
+# 安装方式（会一并安装运行依赖）:
+#     pip install -r requirements.txt -r requirements-dev.txt
+#
+# 运行全部 118 个测试用例:
+#     python -m pytest tests -q
+
+-r requirements.txt
+
+# ---- Testing ----
+pytest>=8.0.0          # tested: 9.0.3
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Agent 开发者管理面板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; }
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 360px; }
+        .login-box h2 { text-align: center; margin-bottom: 24px; color: #1a73e8; }
+        .form-input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .btn-login { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn-login:hover { background: #1557b0; }
+        .register-link { text-align: center; margin-top: 12px; font-size: 13px; color: #666; cursor: pointer; }
+        .register-link:hover { color: #1a73e8; }
+        .error-msg { color: #d93025; font-size: 13px; margin-bottom: 12px; text-align: center; display: none; }
+
+        .app-container { display: none; }
+        .header { background: white; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: #1a73e8; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info span { font-size: 14px; color: #666; }
+        .btn-logout { padding: 6px 16px; background: #f1f3f4; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn-logout:hover { background: #e8eaed; }
+
+        .nav { background: white; padding: 0 24px; border-bottom: 1px solid #e8eaed; }
+        .nav button { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; }
+        .nav button.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+        .nav button:hover { color: #1a73e8; }
+
+        .content { padding: 24px; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .card h3 { margin-bottom: 16px; color: #333; font-size: 16px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+        tr:hover { background: #f8f9fa; }
+
+        .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-right: 4px; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-danger { background: #d93025; color: white; }
+        .btn-danger:hover { background: #b3261e; }
+        .btn-success { background: #0f9d58; color: white; }
+        .btn-success:hover { background: #0b8043; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+        .toolbar input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; width: 240px; }
+
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; display: inline-block; }
+        .badge-success { background: #e6f4ea; color: #137333; }
+        .badge-failed { background: #fce8e6; color: #c5221f; }
+        .badge-pending { background: #fef7e0; color: #b06000; }
+    .badge-admin { background: #e8f0fe; color: #1a73e8; }
+    .badge-super { background: #fce8e6; color: #c5221f; }
+    .badge-user { background: #e6f4ea; color: #137333; }
+
+        .log-viewer { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+
+        .config-form label { display: block; margin-bottom: 4px; font-size: 13px; color: #555; font-weight: 500; }
+        .config-form input { width: 100%; padding: 10px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .config-form .hint { font-size: 12px; color: #999; margin-top: -12px; margin-bottom: 16px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { padding: 16px; background: #f8f9fa; border-radius: 8px; text-align: center; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #1a73e8; }
+        .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+
+        .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+        .pagination button { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .pagination button.active { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <h2>HR Agent 管理面板</h2>
+            <div class="error-msg" id="loginError"></div>
+            <input type="text" class="form-input" id="loginUsername" placeholder="用户名">
+            <input type="password" class="form-input" id="loginPassword" placeholder="密码">
+            <button class="btn-login" id="btnLogin">登 录</button>
+            <div class="register-link" id="toggleRegister">没有账号？点击注册</div>
+            <div id="registerForm" class="hidden" style="margin-top:16px; border-top:1px solid #eee; padding-top:16px;">
+                <input type="text" class="form-input" id="regUsername" placeholder="注册用户名（至少3字符）">
+                <input type="password" class="form-input" id="regPassword" placeholder="注册密码（至少3字符）">
+                <button class="btn-login" style="background:#0f9d58;" id="btnRegister">注 册</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="appPage">
+        <div class="header">
+            <h1>HR Agent 开发者管理面板</h1>
+            <div class="user-info">
+                <span id="displayUser"></span>
+                <span id="displayRole" class="badge"></span>
+                <button class="btn-logout" id="btnLogout">退出</button>
+            </div>
+        </div>
+        <div class="nav" id="navBar">
+            <button class="active" data-tab="ingested">已入库简历</button>
+            <button data-tab="pending">待入库简历</button>
+            <button data-tab="config">LLM 配置</button>
+            <button data-tab="logs">系统日志</button>
+            <button data-tab="users">用户管理</button>
+        </div>
+        <div class="content">
+            <div class="tab-panel active" id="panel-ingested"></div>
+            <div class="tab-panel" id="panel-pending"></div>
+            <div class="tab-panel" id="panel-config"></div>
+            <div class="tab-panel" id="panel-logs"></div>
+            <div class="tab-panel" id="panel-users"></div>
+        </div>
+    </div>
+
+<script>
+(function() {
+    // State
+    let token = localStorage.getItem('admin_token') || '';
+    let username = localStorage.getItem('admin_user') || '';
+    let role = localStorage.getItem('admin_role') || '';
+    let currentTab = 'ingested';
+    let ingestedPage = 1;
+
+    // DOM refs
+    const loginPage = document.getElementById('loginPage');
+    const appPage = document.getElementById('appPage');
+    const loginError = document.getElementById('loginError');
+
+    // API helper
+    async function api(url, options) {
+        options = options || {};
+        const headers = options.headers || {};
+        headers['Content-Type'] = 'application/json';
+        if (token) headers['X-Admin-Token'] = token;
+        options.headers = headers;
+        const resp = await fetch(url, options);
+        if (resp.status === 401) {
+            doLogout();
+            throw new Error('Session expired');
+        }
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Request failed');
+        return data;
+    }
+
+    // Auth
+    document.getElementById('btnLogin').onclick = async function() {
+        const u = document.getElementById('loginUsername').value.trim();
+        const p = document.getElementById('loginPassword').value.trim();
+        if (!u || !p) { showLoginError('请输入用户名和密码'); return; }
+        try {
+            const data = await api('/api/login', { method: 'POST', body: JSON.stringify({username: u, password: p}) });
+            token = data.token;
+            username = data.username;
+            role = data.role;
+            localStorage.setItem('admin_token', token);
+            localStorage.setItem('admin_user', username);
+            localStorage.setItem('admin_role', role);
+            showApp();
+        } catch(e) {
+            showLoginError(e.message);
+        }
+    };
+
+    document.getElementById('loginPassword').onkeydown = function(e) {
+        if (e.key === 'Enter') document.getElementById('btnLogin').click();
+    };
+
+    document.getElementById('toggleRegister').onclick = function() {
+        document.getElementById('registerForm').classList.toggle('hidden');
+    };
+
+    document.getElementById('btnRegister').onclick = async function() {
+        const u = document.getElementById('regUsername').value.trim();
+        const p = document.getElementById('regPassword').value.trim();
+        if (!u || !p || u.length < 3 || p.length < 3) { alert('用户名和密码至少3个字符'); return; }
+        try {
+            await api('/api/register', { method: 'POST', body: JSON.stringify({username: u, password: p}) });
+            alert('注册成功，请登录');
+            document.getElementById('registerForm').classList.add('hidden');
+        } catch(e) {
+            alert(e.message);
+        }
+    };
+
+    document.getElementById('btnLogout').onclick = doLogout;
+
+    function doLogout() {
+        if (token) api('/api/logout', { method: 'POST' }).catch(function(){});
+        token = ''; username = ''; role = '';
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_role');
+        loginPage.style.display = 'flex';
+        appPage.style.display = 'none';
+    }
+
+    function showLoginError(msg) {
+        loginError.textContent = msg;
+        loginError.style.display = 'block';
+        setTimeout(function() { loginError.style.display = 'none'; }, 3000);
+    }
+
+    function showApp() {
+        loginPage.style.display = 'none';
+        appPage.style.display = 'block';
+        document.getElementById('displayUser').textContent = username;
+        const roleEl = document.getElementById('displayRole');
+        roleEl.textContent = role === 'super_admin' ? '超级管理员' : '管理员';
+        roleEl.className = 'badge ' + (role === 'super_admin' ? 'badge-super' : 'badge-admin');
+        loadTab(currentTab);
+    }
+
+    // Navigation
+    document.getElementById('navBar').onclick = function(e) {
+        if (e.target.tagName !== 'BUTTON') return;
+        const tab = e.target.getAttribute('data-tab');
+        if (!tab) return;
+        document.querySelectorAll('#navBar button').forEach(function(b) { b.classList.remove('active'); });
+        e.target.classList.add('active');
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.getElementById('panel-' + tab).classList.add('active');
+        currentTab = tab;
+        loadTab(tab);
+    };
+
+    function loadTab(tab) {
+        if (tab === 'ingested') loadIngested();
+        else if (tab === 'pending') loadPending();
+        else if (tab === 'config') loadConfig();
+        else if (tab === 'logs') loadLogs();
+        else if (tab === 'users') loadUsers();
+    }
+
+    // ── Ingested Resumes ──
+    async function loadIngested(page) {
+        page = page || ingestedPage;
+        ingestedPage = page;
+        const panel = document.getElementById('panel-ingested');
+        try {
+            const data = await api('/api/resumes/ingested?page=' + page + '&page_size=20');
+            let html = '<div class="card"><h3>已入库简历 (共 ' + data.total + ' 条)</h3>';
+            html += '<div class="toolbar"><input type="text" id="searchIngested" placeholder="搜索姓名/邮箱/职位..."><button class="btn btn-primary" id="btnSearch">搜索</button></div>';
+            html += '<table><tr><th>ID</th><th>姓名</th><th>性别</th><th>学历</th><th>工作年限</th><th>职位</th><th>入库时间</th>';
+            if (role === 'super_admin') html += '<th>操作</th>';
+            html += '</tr>';
+            data.resumes.forEach(function(r) {
+                html += '<tr><td>' + r.id + '</td><td>' + (r.name||'-') + '</td><td>' + (r.gender||'-') + '</td>';
+                html += '<td>' + (r.highest_education||'-') + '</td><td>' + (r.work_years||0) + '</td>';
+                html += '<td>' + (r.current_position||'-') + '</td><td>' + (r.created_at||'-') + '</td>';
+                if (role === 'super_admin') {
+                    html += '<td><button class="btn btn-danger btn-del-resume" data-id="' + r.id + '">删除</button></td>';
+                }
+                html += '</tr>';
+            });
+            html += '</table>';
+            // Pagination
+            var totalPages = Math.ceil(data.total / 20);
+            if (totalPages > 1) {
+                html += '<div class="pagination">';
+                for (var i = 1; i <= Math.min(totalPages, 10); i++) {
+                    html += '<button class="btn-page' + (i === page ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            panel.innerHTML = html;
+
+            // Events
+            var searchBtn = document.getElementById('btnSearch');
+            if (searchBtn) searchBtn.onclick = function() {
+                var q = document.getElementById('searchIngested').value;
+                loadIngestedSearch(q);
+            };
+            panel.querySelectorAll('.btn-del-resume').forEach(function(btn) {
+                btn.onclick = function() { deleteResume(parseInt(btn.getAttribute('data-id'))); };
+            });
+            panel.querySelectorAll('.btn-page').forEach(function(btn) {
+                btn.onclick = function() { loadIngested(parseInt(btn.getAttribute('data-page'))); };
+            });
+        } catch(e) {
+            panel.innerHTML = '<div class="card"><p>加载失败: ' + e.message + '</p></div>';
+        }
+    }
+
+    async function loadIngestedSearch(query) {
+        try {
+            const data = await api('/api/resumes/ingested?search=' + encodeURIComponent(query));
+            // Reuse loadIngested logic with search
+            ingestedPage = 1;
+            loadIngested(1);
+        } catch(e) { alert(e.message); }
+    }
+
+    async function deleteResume(id) {
+        if (!confirm('确定删除候选人 #' + id + '？此操作不可恢复。')) return;
+        try {
+            await api('/api/resumes/' + id, { method: 'DELETE' });
+            loadIngested();
+        } catch(e) { alert(e.message); }
+    }
+
+    // ── Pending Resumes ──
+    async function loadPending() {
+        const panel = document.getElementById('panel-pending');
+        try {
+            const data = await api('/api/resumes/pending');
+            const statusData = await api('/api/scanner/status');
+            let html = '<div class="card">';
+            html += '<div class="stats-grid">';
+            html += '<div class="stat-card"><div class="value">' + (statusData.processed_count||0) + '</div><div class="label">已入库</div></div>';
+            html += '<div class="stat-card"><div class="value">' + (statusData.pending_count||0) + '</div><div class="label">待处理</div></div>';
+            html += '<div class="stat-card"><div class="value">' + (statusData.failed_count||0) + '</div><div class="label">失败</div></div>';
+            html += '<div class="stat-card"><div class="value">' + (statusData.last_scan_time ? statusData.last_scan_time.substring(11,16) : '从未') + '</div><div class="label">上次扫描</div></div>';
+            html += '</div>';
+            html += '<h3>待入库简历 (' + data.files.length + ' 个文件)</h3>';
+            if (role === 'super_admin') {
+                html += '<div class="toolbar"><button class="btn btn-primary" id="btnIngestSelected">入库选中</button>';
+                html += '<button class="btn btn-success" id="btnTriggerScan">立即扫描</button></div>';
+            }
+            html += '<table><tr>';
+            if (role === 'super_admin') html += '<th style="width:40px"><input type="checkbox" id="checkAll"></th>';
+            html += '<th>文件名</th><th>大小</th><th>修改时间</th><th>状态</th></tr>';
+            data.files.forEach(function(f) {
+                html += '<tr>';
+                if (role === 'super_admin') html += '<td><input type="checkbox" class="file-cb" value="' + f.path + '"></td>';
+                html += '<td>' + f.name + '</td>';
+                html += '<td>' + (f.size / 1024).toFixed(1) + ' KB</td>';
+                html += '<td>' + (f.modified || '-') + '</td>';
+                html += '<td><span class="badge ' + (f.failed ? 'badge-failed' : 'badge-pending') + '">' + (f.failed ? '失败' : '待处理') + '</span></td>';
+                html += '</tr>';
+            });
+            html += '</table></div>';
+            panel.innerHTML = html;
+
+            // Events
+            var checkAll = document.getElementById('checkAll');
+            if (checkAll) checkAll.onchange = function() {
+                document.querySelectorAll('.file-cb').forEach(function(cb) { cb.checked = checkAll.checked; });
+            };
+            var btnIngest = document.getElementById('btnIngestSelected');
+            if (btnIngest) btnIngest.onclick = ingestSelected;
+            var btnScan = document.getElementById('btnTriggerScan');
+            if (btnScan) btnScan.onclick = triggerScan;
+        } catch(e) {
+            panel.innerHTML = '<div class="card"><p>加载失败: ' + e.message + '</p></div>';
+        }
+    }
+
+    async function ingestSelected() {
+        var paths = [];
+        document.querySelectorAll('.file-cb:checked').forEach(function(cb) { paths.push(cb.value); });
+        if (!paths.length) { alert('请选择至少一个文件'); return; }
+        try {
+            const data = await api('/api/resumes/ingest', { method: 'POST', body: JSON.stringify({file_paths: paths}) });
+            var success = data.results.filter(function(r) { return r.success; }).length;
+            var failed = data.results.length - success;
+            alert('入库完成: 成功=' + success + ', 失败=' + failed);
+            loadPending();
+        } catch(e) { alert(e.message); }
+    }
+
+    async function triggerScan() {
+        try {
+            const data = await api('/api/resumes/scan', { method: 'POST' });
+            alert('扫描完成: 发现=' + data.found + ', 成功=' + data.success + ', 失败=' + data.failed);
+            loadPending();
+        } catch(e) { alert(e.message); }
+    }
+
+    // ── LLM Config ──
+    async function loadConfig() {
+        const panel = document.getElementById('panel-config');
+        try {
+            const data = await api('/api/config/llm');
+            const status = await api('/api/scanner/status');
+            let html = '<div class="card"><h3>LLM 配置</h3>';
+            if (role === 'super_admin') {
+                html += '<div class="config-form">';
+                html += '<label>API Key</label><input id="cfgKey" value="' + (data.api_key||'') + '">';
+                html += '<div class="hint">当前显示前8位 + ***，输入新值将完整替换</div>';
+                html += '<label>Base URL</label><input id="cfgUrl" value="' + (data.base_url||'') + '">';
+                html += '<label>Model</label><input id="cfgModel" value="' + (data.model||'') + '">';
+                html += '<button class="btn btn-primary" id="btnSaveConfig">保存配置</button>';
+                html += '<span style="margin-left:12px;font-size:12px;color:#666;">运行时生效，重启后需修改 backend/config.py</span>';
+                html += '</div>';
+            } else {
+                html += '<p><strong>API Key:</strong> ' + (data.api_key||'-') + '</p>';
+                html += '<p><strong>Base URL:</strong> ' + (data.base_url||'-') + '</p>';
+                html += '<p><strong>Model:</strong> ' + (data.model||'-') + '</p>';
+                html += '<p style="color:#999;margin-top:12px;">只有超级管理员可修改配置</p>';
+            }
+            html += '</div>';
+
+            html += '<div class="card"><h3>扫描器状态</h3>';
+            html += '<div class="stats-grid">';
+            html += '<div class="stat-card"><div class="value">' + (status.processed_count||0) + '</div><div class="label">已处理文件</div></div>';
+            html += '<div class="stat-card"><div class="value">' + (status.pending_count||0) + '</div><div class="label">待处理文件</div></div>';
+            html += '<div class="stat-card"><div class="value">' + (status.failed_count||0) + '</div><div class="label">失败文件</div></div>';
+            html += '</div>';
+            html += '<p><strong>扫描时间:</strong> 每天 ' + (status.scan_hours||[]).join(', ') + ' 时</p>';
+            html += '<p><strong>上次扫描:</strong> ' + (status.last_scan_time || '从未') + '</p>';
+            html += '<p><strong>简历目录:</strong> ' + (status.resume_data_dir||'-') + '</p>';
+            html += '</div>';
+
+            panel.innerHTML = html;
+
+            var btnSave = document.getElementById('btnSaveConfig');
+            if (btnSave) btnSave.onclick = saveConfig;
+        } catch(e) {
+            panel.innerHTML = '<div class="card"><p>加载失败: ' + e.message + '</p></div>';
+        }
+    }
+
+    async function saveConfig() {
+        var key = document.getElementById('cfgKey').value;
+        var url = document.getElementById('cfgUrl').value;
+        var model = document.getElementById('cfgModel').value;
+        try {
+            await api('/api/config/llm', { method: 'PUT', body: JSON.stringify({api_key: key, base_url: url, model: model}) });
+            alert('配置已保存');
+        } catch(e) { alert(e.message); }
+    }
+
+    // ── Logs ──
+    async function loadLogs() {
+        const panel = document.getElementById('panel-logs');
+        let html = '<div class="card"><h3>系统日志</h3>';
+        html += '<div class="toolbar">';
+        html += '<button class="btn btn-primary log-type-btn" data-type="backend">后端日志</button>';
+        html += '<button class="btn log-type-btn" data-type="frontend">前端日志</button>';
+        html += '<button class="btn log-type-btn" data-type="admin">管理面板日志</button>';
+        html += '</div>';
+        html += '<div class="log-viewer" id="logContent">加载中...</div></div>';
+        panel.innerHTML = html;
+
+        panel.querySelectorAll('.log-type-btn').forEach(function(btn) {
+            btn.onclick = function() {
+                panel.querySelectorAll('.log-type-btn').forEach(function(b) { b.classList.remove('btn-primary'); });
+                btn.classList.add('btn-primary');
+                fetchLogs(btn.getAttribute('data-type'));
+            };
+        });
+
+        fetchLogs('backend');
+    }
+
+    async function fetchLogs(logType) {
+        try {
+            const data = await api('/api/logs?log_type=' + logType + '&lines=300');
+            var content = (data.logs || []).join('');
+            document.getElementById('logContent').textContent = content || '(无日志)';
+            // Auto scroll to bottom
+            var el = document.getElementById('logContent');
+            el.scrollTop = el.scrollHeight;
+        } catch(e) {
+            document.getElementById('logContent').textContent = '加载失败: ' + e.message;
+        }
+    }
+
+    // ── Users ──
+    function roleBadge(r) {
+        if (r === 'super_admin') return '<span class="badge badge-super">超级管理员</span>';
+        if (r === 'admin') return '<span class="badge badge-admin">普通管理员</span>';
+        return '<span class="badge badge-user">普通用户</span>';
+    }
+
+    function renderUserTable(list, isAdminTable) {
+        let html = '<table><tr><th>ID</th><th>用户名</th><th>角色</th><th>创建时间</th><th>最后登录</th>';
+        if (role === 'super_admin') html += '<th>操作</th>';
+        html += '</tr>';
+        if (!list || list.length === 0) {
+            const span = (role === 'super_admin') ? 6 : 5;
+            html += '<tr><td colspan="' + span + '" style="text-align:center;color:#999;">暂无' + (isAdminTable ? '管理员' : '普通用户') + '</td></tr>';
+        } else {
+            list.forEach(function(u) {
+                html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td>';
+                html += '<td>' + roleBadge(u.role) + '</td>';
+                html += '<td>' + (u.created_at||'-') + '</td><td>' + (u.last_login||'-') + '</td>';
+                if (role === 'super_admin') {
+                    if (u.role !== 'super_admin') {
+                        html += '<td><button class="btn btn-danger btn-del-user" data-id="' + u.id + '">删除</button></td>';
+                    } else {
+                        html += '<td>-</td>';
+                    }
+                }
+                html += '</tr>';
+            });
+        }
+        html += '</table>';
+        return html;
+    }
+
+    async function loadUsers() {
+        const panel = document.getElementById('panel-users');
+        try {
+            const data = await api('/api/users');
+            const admins = data.admins || [];
+            const users = data.users || [];
+            let html = '';
+
+            // 超管创建账号表单
+            if (role === 'super_admin') {
+                html += '<div class="card"><h3>创建账号</h3>';
+                html += '<div class="toolbar">';
+                html += '<input type="text" id="newUserName" placeholder="用户名(≥3位)">';
+                html += '<input type="password" id="newUserPwd" placeholder="密码(≥3位)">';
+                html += '<select id="newUserRole" style="padding:8px;border:1px solid #ddd;border-radius:6px;">';
+                html += '<option value="user">普通用户</option>';
+                html += '<option value="admin">普通管理员</option>';
+                html += '</select>';
+                html += '<button class="btn btn-primary" id="btnCreateUser">创建</button>';
+                html += '</div></div>';
+            }
+
+            // 管理员名单
+            html += '<div class="card"><h3>管理员名单 (' + admins.length + ')</h3>';
+            html += renderUserTable(admins, true);
+            html += '</div>';
+
+            // 普通用户名单
+            html += '<div class="card"><h3>普通用户名单 (' + users.length + ')</h3>';
+            html += renderUserTable(users, false);
+            html += '</div>';
+
+            panel.innerHTML = html;
+
+            panel.querySelectorAll('.btn-del-user').forEach(function(btn) {
+                btn.onclick = function() { deleteUserById(parseInt(btn.getAttribute('data-id'))); };
+            });
+            const btnCreate = document.getElementById('btnCreateUser');
+            if (btnCreate) btnCreate.onclick = createUser;
+        } catch(e) {
+            panel.innerHTML = '<div class="card"><p>加载失败: ' + e.message + '</p></div>';
+        }
+    }
+
+    async function createUser() {
+        const username = (document.getElementById('newUserName').value || '').trim();
+        const password = (document.getElementById('newUserPwd').value || '').trim();
+        const userRole = document.getElementById('newUserRole').value;
+        if (username.length < 3 || password.length < 3) {
+            alert('用户名和密码至少3个字符'); return;
+        }
+        try {
+            await api('/api/users', {
+                method: 'POST',
+                body: JSON.stringify({ username: username, password: password, role: userRole })
+            });
+            loadUsers();
+        } catch(e) { alert(e.message); }
+    }
+
+    async function deleteUserById(id) {
+        if (!confirm('确定删除该用户？')) return;
+        try {
+            await api('/api/users/' + id, { method: 'DELETE' });
+            loadUsers();
+        } catch(e) { alert(e.message); }
+    }
+
+    // ── Init ──
+    if (token) {
+        showApp();
+    }
+})();
+</script>
+</body>
+</html>

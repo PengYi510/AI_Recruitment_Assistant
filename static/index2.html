@@ -1,0 +1,4619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能招聘匹配助手</title>
+
+  <!-- Markdown 渲染 & 代码高亮 -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@13/dist/markdown-it.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/dist/highlight.min.js"></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-dark.min.css" />
+  <!-- XSS 过滤 -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <!-- Excel 导出 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    /* ── Reset & 全局 ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-bg:          #ffffff;
+      --color-sidebar:     #f7f8fa;
+      --color-sidebar-hov: #f0f1f3;
+      --color-sidebar-act: #ffffff;
+      --color-chat-bg:     #ffffff;
+      --color-bubble-bot:  #ffffff;
+      --color-bubble-user: #f5f5f5;
+      --color-text-bot:    #1f2329;
+      --color-text-user:   #1f2329;
+      --color-border:      #e5e6eb;
+      --color-input-bg:    #ffffff;
+      --color-primary:     #1677ff;
+      --color-danger:      #ff4d4f;
+      --radius-bubble:     8px;
+      --shadow-bubble:     0 1px 4px rgba(0,0,0,.10);
+      --font-size-base:    14px;
+      --sidebar-width:     200px;
+      --header-height:     56px;
+      --input-area-height: 80px;
+      --transition:        0.18s ease;
+    }
+
+    html, body { height: 100%; overflow: hidden; font-size: var(--font-size-base); }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text-bot);
+    }
+
+    /* ── 布局骨架 ─────────────────────────────────────── */
+    #app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── 左侧边栏 ─────────────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: var(--color-sidebar);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #sidebar-header {
+      padding: 20px 16px 12px;
+      border-bottom: 1px solid #e5e6eb;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #1f2329;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .sidebar-logo .logo-icon {
+      width: 30px; height: 30px;
+      background: var(--color-primary);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    #btn-new-chat {
+      width: 100%;
+      padding: 10px 16px;
+      background: #ffffff;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      color: #1f2329;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      transition: background var(--transition);
+    }
+    #btn-new-chat:hover { background: #f2f3f5; border-color: #d0d3d9; }
+    #btn-new-chat .icon { font-size: 16px; line-height: 1; }
+
+    /* 会话列表 */
+    #session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #session-list::-webkit-scrollbar { width: 4px; }
+    #session-list::-webkit-scrollbar-thumb { background: #d0d3d9; border-radius: 4px; }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #1f2329;
+      font-size: 14px;
+      transition: background var(--transition), color var(--transition);
+      position: relative;
+    }
+    .session-item:hover { background: #ffffff; }
+    .session-item.active { background: #ffffff; font-weight: 500; }
+
+    .session-item .si-icon { font-size: 14px; flex-shrink: 0; opacity: .7; }
+
+    .session-item .si-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .session-item .si-del {
+      display: none;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color var(--transition);
+      flex-shrink: 0;
+    }
+    .session-item:hover .si-del { display: flex; align-items: center; }
+    .session-item .si-del:hover { color: #ff4d4f; }
+
+    .sidebar-empty {
+      color: #8f959e;
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 16px;
+    }
+
+    /* 侧边栏底部用户信息 */
+    #sidebar-user {
+      padding: 12px 16px;
+      border-top: 1px solid #e5e6eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #sidebar-user .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+    #sidebar-user .user-avatar {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    #sidebar-user .user-name {
+      font-size: 13px;
+      color: #1f2329;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100px;
+    }
+    #btn-logout {
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #8f959e;
+      background: none;
+      border: 1px solid #e5e6eb;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #btn-logout:hover {
+      color: #ff4d4f;
+      border-color: #ff4d4f;
+    }
+
+    /* ── 主聊天区 ─────────────────────────────────────── */
+    #chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    /* 顶部标题栏 */
+    #chat-header {
+      height: var(--header-height);
+      min-height: var(--header-height);
+      padding: 0 20px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    #chat-header .ch-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #1677ff, #36cfc9);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    #chat-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+      flex: 1;
+    }
+    #chat-subtitle {
+      font-size: 12px;
+      color: #8f959e;
+    }
+    #btn-new-session {
+      padding: 10px 16px;
+      background: #f2f3f5;
+      color: #1f2329;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background var(--transition), box-shadow var(--transition);
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    #btn-new-session:hover {
+      background: #e8e9ed;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    #btn-new-session .icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* 消息区域 */
+    #messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 24px 12px;
+      background: var(--color-chat-bg);
+      scroll-behavior: smooth;
+    }
+    #messages-container::-webkit-scrollbar { width: 6px; }
+    #messages-container::-webkit-scrollbar-track { background: transparent; }
+    #messages-container::-webkit-scrollbar-thumb { background: #d0d3d9; border-radius: 4px; }
+
+    /* 欢迎提示 */
+    #welcome-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: #8f959e;
+      text-align: center;
+    }
+    #welcome-hint .wh-icon { font-size: 48px; line-height: 1; }
+    #welcome-hint .wh-title { font-size: 18px; font-weight: 600; color: #1f2329; }
+    #welcome-hint .wh-desc { font-size: 13px; max-width: 320px; line-height: 1.6; }
+    .wh-chips {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; justify-content: center;
+    }
+    .wh-chip {
+      padding: 6px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--color-primary);
+      cursor: pointer;
+      background: #fff;
+      transition: all var(--transition);
+    }
+    .wh-chip:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+    /* 单条消息包装器 */
+    .msg-row {
+      display: flex;
+      margin-bottom: 24px;
+      align-items: flex-end;
+      gap: 10px;
+      animation: fadeSlideIn .22s ease both;
+    }
+    .msg-row.user  { justify-content: flex-end; }
+    .msg-row.bot   { justify-content: flex-start; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 头像 */
+    .msg-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      overflow: hidden;
+    }
+    .msg-avatar.bot-avatar  {
+      background: linear-gradient(135deg, #1677ff, #36cfc9);
+      color: #fff;
+    }
+    .msg-avatar.user-avatar {
+      background: #f5a623;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* 气泡 */
+    .msg-bubble {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: var(--radius-bubble);
+      line-height: 1.6;
+      font-size: 14px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      word-break: break-word;
+      position: relative;
+    }
+    .msg-row.bot  .msg-bubble {
+      background: var(--color-bubble-bot);
+      color: var(--color-text-bot);
+      border-bottom-left-radius: var(--radius-bubble);
+      border: 1px solid #f0f0f0;
+    }
+    .msg-row.user .msg-bubble {
+      background: var(--color-bubble-user);
+      color: var(--color-text-user);
+      border-bottom-right-radius: var(--radius-bubble);
+      border: none;
+    }
+
+    /* Markdown 样式 */
+    .msg-bubble p   { margin: 0 0 .5em; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble h1, .msg-bubble h2, .msg-bubble h3 {
+      font-size: 1em; font-weight: 600; margin: .6em 0 .3em;
+    }
+    .msg-bubble ul, .msg-bubble ol { padding-left: 1.4em; margin: .4em 0; }
+    .msg-bubble li { margin-bottom: .2em; }
+    .msg-bubble code:not([class]) {
+      background: rgba(0,0,0,.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+    .msg-row.user .msg-bubble code:not([class]) { background: rgba(0,0,0,.08); }
+    .msg-bubble pre {
+      background: #282c34;
+      border-radius: 8px;
+      padding: 12px;
+      overflow-x: auto;
+      margin: .6em 0;
+    }
+    .msg-bubble pre code { background: transparent; padding: 0; font-size: 12px; }
+    .msg-bubble table { border-collapse: collapse; width: 100%; margin: .4em 0; font-size: 13px; }
+    .msg-bubble th, .msg-bubble td {
+      border: 1px solid var(--color-border);
+      padding: 5px 10px;
+      text-align: left;
+    }
+    .msg-bubble th { background: #f5f6f8; font-weight: 600; }
+    .msg-bubble a { color: var(--color-primary); text-decoration: none; }
+    .msg-bubble a:hover { text-decoration: underline; }
+    .msg-bubble blockquote {
+      border-left: 3px solid var(--color-primary);
+      padding-left: 10px;
+      margin: .4em 0;
+      color: #666;
+    }
+
+    /* "打字中" 加载气泡 */
+    .typing-bubble {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 12px 16px;
+    }
+    .typing-dot {
+      width: 7px; height: 7px;
+      background: #aaa;
+      border-radius: 50%;
+      animation: typingBounce 1.2s infinite ease-in-out;
+      flex-shrink: 0;
+    }
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: .2s; }
+    .typing-dot:nth-child(3) { animation-delay: .4s; }
+
+    /* 思考阶段状态文字 */
+    .typing-status-text {
+      font-size: 12px;
+      color: #999;
+      margin-left: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 180px;
+      text-overflow: ellipsis;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .typing-status-text.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); background: #bbb; }
+      30% { transform: translateY(-6px); background: var(--color-primary); }
+    }
+
+    /* 流式输出时的闪烁光标 */
+    .streaming-bubble::after {
+      content: '▊';
+      animation: streamCursor 0.8s infinite ease-in-out;
+      color: var(--color-primary);
+      font-size: 13px;
+      margin-left: 2px;
+    }
+    @keyframes streamCursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* 时间戳 */
+    .msg-time {
+      font-size: 11px;
+      color: #bbb;
+      margin: 0 4px 4px;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+
+    /* ── 用户反馈按钮（点赞/点踩） ─────────────────── */
+    .msg-feedback {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0,0,0,.04);
+    }
+    .msg-feedback-btn {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 3px 6px;
+      font-size: 14px;
+      color: #bbb;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .msg-feedback-btn:hover {
+      color: #666;
+      background: #f5f5f5;
+      border-color: #e5e6eb;
+    }
+    .msg-feedback-btn.active-like {
+      color: #52c41a;
+      background: #f6ffed;
+      border-color: #b7eb8f;
+    }
+    .msg-feedback-btn.active-dislike {
+      color: #ff4d4f;
+      background: #fff2f0;
+      border-color: #ffccc7;
+    }
+    .msg-feedback-btn.disabled {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .msg-feedback-btn .fb-label {
+      font-size: 11px;
+    }
+
+    /* ── 输入区 ──────────────────────────────────────── */
+    #input-area {
+      border-top: 1px solid var(--color-border);
+      background: var(--color-input-bg);
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    /* 欢迎屏幕时隐藏底部输入框 */
+    #input-area.hidden {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #msg-input {
+      flex: 1;
+      min-height: 40px;
+      max-height: 120px;
+      padding: 10px 14px;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.5;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      background: #fafafa;
+      overflow-y: auto;
+    }
+    #msg-input:focus {
+      border-color: #1677ff;
+      box-shadow: 0 0 0 2px rgba(22,119,255,.12);
+      background: #fff;
+    }
+    #msg-input::placeholder { color: #999; }
+
+    #btn-send {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: background var(--transition), transform var(--transition), opacity var(--transition);
+    }
+    #btn-send:hover:not(:disabled) { background: #0958d9; transform: scale(1.06); }
+    #btn-send:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    /* 发送图标 SVG */
+    .send-icon { pointer-events: none; }
+
+    /* 输入区状态提示 */
+    #input-status {
+      font-size: 11px;
+      color: #8f959e;
+      padding: 0 4px 4px 18px;
+      min-height: 16px;
+    }
+
+    /* ── 追问建议条 ────────────────────────────── */
+    #suggestions-bar {
+      display: none;
+      padding: 6px 16px 4px;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      animation: suggFadeIn 0.25s ease both;
+    }
+    #suggestions-bar.visible {
+      display: flex;
+    }
+    @keyframes suggFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .sugg-label {
+      font-size: 11px;
+      color: #bbb;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .sugg-chip {
+      position: relative;
+      padding: 5px 14px;
+      border: 1px solid #e5e6eb;
+      border-radius: 16px;
+      background: #fff;
+      color: #4e5969;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+    .sugg-chip:hover {
+      background: #f0f5ff;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    /* tooltip：hover 时展示完整文字 */
+    .sugg-chip::after {
+      content: attr(data-full);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 32, 38, 0.92);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 6px 12px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-width: 320px;
+      width: max-content;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .sugg-chip:hover::after {
+      opacity: 1;
+    }
+
+/* ── 交互确认卡片（多 Agent 选择） ──────────────── */
+.interaction-bubble {
+  background: var(--color-bubble-bot);
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  max-width: 75%;
+}
+.interaction-prompt {
+  margin-bottom: 12px;
+}
+.interaction-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.interaction-option-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--color-primary, #4f6ef7);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--color-primary, #4f6ef7);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.interaction-option-btn:hover:not(:disabled) {
+  background: var(--color-primary, #4f6ef7);
+  color: #fff;
+}
+.interaction-option-btn.interaction-all-btn {
+  background: var(--color-primary, #4f6ef7);
+  color: #fff;
+  border-color: var(--color-primary, #4f6ef7);
+}
+.interaction-option-btn.interaction-all-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.interaction-option-btn.selected {
+  background: #e0e7ff;
+  color: #3451b2;
+  border-color: #3451b2;
+  font-weight: 600;
+}
+.interaction-option-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* ── 空会话提示（无会话选中） ────────────────────── */
+#no-session-hint {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+      gap: 14px;
+      color: #8f959e;
+      text-align: center;
+    }
+    #no-session-hint .nsh-icon { font-size: 52px; }
+    #no-session-hint .nsh-title { font-size: 16px; color: #1f2329; font-weight: 600; }
+    #no-session-hint .nsh-desc  { font-size: 13px; }
+    #no-session-hint #btn-start-chat {
+      margin-top: 8px;
+      padding: 10px 24px;
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    #no-session-hint #btn-start-chat:hover { background: #0958d9; }
+
+    /* ── 欢迎屏幕 ────────────────────── */
+    #welcome-screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 32px 24px 24px;
+      background: #fff;
+      overflow-y: auto;
+    }
+    #welcome-screen.active {
+      display: flex;
+    }
+    #welcome-screen::-webkit-scrollbar { width: 6px; }
+    #welcome-screen::-webkit-scrollbar-thumb { background: #d0d3d9; border-radius: 4px; }
+    .ws-content {
+      width: 100%;
+      max-width: 900px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    .ws-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .ws-header .ws-icon {
+      font-size: 52px;
+      line-height: 1;
+    }
+    .ws-header .ws-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2329;
+      margin: 0;
+    }
+    .ws-header .ws-desc {
+      font-size: 14px;
+      color: #8f959e;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .ws-input-wrapper {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+
+    /* ── 功能引导卡片 ────────────────────────────── */
+    .ws-feature-cards {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+      width: 100%;
+      max-width: 900px;
+    }
+    /* 6张卡片，每张各占1列（6×1=6）→ 均匀2行×3列 */
+    .ws-feature-card {
+      grid-column: span 2;
+    }
+
+    .ws-feature-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 18px 18px 14px;
+      background: #fff;
+      border: 1px solid #e8e9ed;
+      border-radius: 12px;
+      cursor: default;
+      transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+    }
+    .ws-feature-card:hover {
+      box-shadow: 0 4px 16px rgba(22, 119, 255, 0.1);
+      border-color: #b3d1ff;
+      transform: translateY(-2px);
+    }
+
+    .ws-feature-card-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .ws-feature-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .ws-feature-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+
+    .ws-feature-card-desc {
+      font-size: 12px;
+      color: #8f959e;
+      line-height: 1.5;
+    }
+
+    .ws-feature-card-examples {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+      border-top: 1px solid #f0f1f3;
+      padding-top: 10px;
+    }
+
+    .ws-example-chip {
+      padding: 7px 10px;
+      background: #f7f8fa;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #4e5969;
+      cursor: pointer;
+      transition: all var(--transition);
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ws-example-chip:hover {
+      background: #e8f0fe;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* 响应式：屏幕较窄时改为1列或2列 */
+    @media (max-width: 860px) {
+      .ws-feature-cards {
+        grid-template-columns: 1fr;
+      }
+      .ws-feature-card {
+        grid-column: span 1;
+      }
+    }
+    @media (min-width: 600px) and (max-width: 860px) {
+      .ws-feature-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .ws-feature-card {
+        grid-column: span 1;
+      }
+    }
+    .ws-input-box {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      padding: 24px 24px;
+      background: #fff;
+      border: 1px solid #e5e6eb;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
+      transition: all var(--transition);
+    }
+    .ws-input-box:focus-within {
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 16px rgba(22,119,255,.15);
+    }
+    .ws-input-box textarea {
+      flex: 1;
+      min-height: 64px;
+      max-height: 160px;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 16px;
+      font-family: inherit;
+      background: transparent;
+      color: #1f2329;
+      line-height: 1.5;
+      padding: 0;
+      overflow-y: auto;
+    }
+    .ws-input-box textarea::placeholder {
+      color: #999;
+    }
+
+    /* Placeholder 滚动淡出效果 */
+    @keyframes placeholderScrollUp {
+      0% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      20% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      40% {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      60% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      80% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .ws-input-box textarea.placeholder-animating::placeholder {
+      animation: placeholderScrollUp 0.8s ease-in-out;
+    }
+    .ws-send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .ws-send-btn:hover:not(:disabled) {
+      background: #0958d9;
+      transform: scale(1.06);
+    }
+    .ws-send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .ws-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      width: 100%;
+    }
+    .ws-chip {
+      padding: 8px 12px;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      background: #fff;
+      color: #1f2329;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ws-chip:hover {
+      background: #f2f3f5;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .ws-chip-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── Toast 通知 ──────────────────────────────────── */
+    #toast-wrap {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: rgba(0,0,0,.75);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      animation: toastIn .2s ease both;
+      pointer-events: none;
+    }
+    .toast.toast-error { background: rgba(255,77,79,.85); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastOut {
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    /* ── 滚动到底部按钮 ──────────────────────────────── */
+    #btn-scroll-bottom {
+      position: absolute;
+      bottom: 96px;
+      right: 28px;
+      width: 34px; height: 34px;
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      font-size: 16px;
+      color: #666;
+      transition: all var(--transition);
+      z-index: 10;
+    }
+    #btn-scroll-bottom.visible { display: flex; }
+    #btn-scroll-bottom:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+    /* ── 长文本消息折叠/展开（参考 Semi Design 简洁风格） ──────────────────────── */
+    .msg-bubble.collapsible-wrapper {
+      position: relative;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+    }
+    .msg-bubble.collapsible-wrapper .bubble-content {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      transition: max-height 0.3s ease;
+    }
+    /* 默认展开状态 */
+    .msg-bubble.collapsible-wrapper .bubble-content {
+      /* max-height: 2000px; */
+      overflow: visible;
+    }
+    /* 折叠状态 */
+    .msg-bubble.collapsible-wrapper.collapsed .bubble-content {
+      max-height: 160px;
+      overflow: hidden;
+    }
+    /* 折叠状态下的渐变遮罩 */
+    .msg-bubble.collapsible-wrapper.collapsed .bubble-content::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(transparent, var(--color-bubble-bot));
+      pointer-events: none;
+    }
+    /* 折叠状态下修正下方拓角，保持同上方一致 */
+    .msg-bubble.collapsible-wrapper.collapsed {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: var(--radius-bubble);
+      line-height: 1.65;
+      font-size: 14px;
+      box-shadow: var(--shadow-bubble);
+      word-break: break-word;
+      position: relative;
+    }
+    
+    /* 折叠/展开按钮（底部按钮） */
+    .bubble-collapse-btn {
+      align-self: center;
+      padding: 6px 0;
+      margin-top: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #8f959e;
+      transition: color var(--transition);
+      line-height: 1;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .bubble-collapse-btn:hover {
+      color: #4e5969;
+    }
+    .bubble-collapse-btn .collapse-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: transform 0.3s ease;
+      color: inherit;
+    }
+    /* 折叠时箭头旋转 */
+    .msg-bubble.collapsible-wrapper.collapsed .collapse-arrow {
+      transform: rotate(180deg);
+    }
+    .bubble-collapse-btn .collapse-text {
+      font-size: 12px;
+      color: inherit;
+    }
+
+/* ── 右侧 SHAP 面板 ──────────────────────────────── */
+.shap-panel {
+width: 400px;
+min-width: 400px;
+      border-left: 1px solid var(--color-border);
+      background: #fafbfc;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.3s ease, min-width 0.3s ease, opacity 0.3s ease;
+    }
+    .shap-panel.hidden {
+      width: 0;
+      min-width: 0;
+      opacity: 0;
+      border-left: none;
+      overflow: hidden;
+    }
+    .shap-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--color-border);
+      background: #fff;
+    }
+    .shap-panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+    .shap-panel-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #8f959e;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .shap-panel-close:hover {
+      background: #f0f1f3;
+      color: #1f2329;
+    }
+    .shap-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .shap-candidate-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #e8f4ff;
+      border-radius: 6px;
+    }
+    .shap-chart-container {
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .shap-chart-container img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      display: none;
+    }
+    .shap-chart-container img.loaded {
+      display: block;
+    }
+    .shap-loading {
+      color: #8f959e;
+      font-size: 13px;
+    }
+    .shap-error {
+      color: #ff4d4f;
+      font-size: 13px;
+      text-align: center;
+    }
+    .shap-legend {
+      margin-top: 12px;
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: #646a73;
+    }
+    .shap-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .shap-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    .shap-dot.positive { background: #FF0D57; }
+    .shap-dot.negative { background: #1E88E5; }
+    /* ── SHAP 折叠面板（Collapsible sections） ─────── */
+    .shap-collapsible {
+      margin-top: 14px;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .shap-collapsible + .shap-collapsible {
+      margin-top: 10px;
+    }
+    .shap-collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f7f8fa;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .shap-collapsible-header:hover {
+      background: #eef0f3;
+    }
+    .shap-collapsible-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+    .shap-collapsible-arrow {
+      font-size: 12px;
+      color: #8f959e;
+      transition: transform 0.25s ease;
+    }
+    .shap-collapsible.open .shap-collapsible-arrow {
+      transform: rotate(180deg);
+    }
+    .shap-collapsible-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      padding: 0 14px;
+    }
+    .shap-collapsible.open .shap-collapsible-body {
+      max-height: 600px;
+      padding: 12px 14px;
+    }
+    .shap-global-img {
+      width: 100%;
+      border-radius: 6px;
+      display: none;
+    }
+    .shap-global-img.loaded {
+      display: block;
+    }
+    .shap-global-loading,
+    .shap-global-error {
+      font-size: 12px;
+      color: #8f959e;
+      text-align: center;
+      padding: 8px 0;
+    }
+    .shap-global-error { color: #ff4d4f; }
+    .shap-interaction-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .shap-interaction-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f1f3;
+      font-size: 12px;
+      color: #1f2329;
+      line-height: 1.5;
+    }
+    .shap-interaction-item:last-child {
+      border-bottom: none;
+    }
+    .shap-interaction-badge {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #e8f4ff;
+      color: var(--color-primary);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .shap-interaction-detail {
+      flex: 1;
+    }
+    .shap-interaction-pair {
+      font-weight: 600;
+      color: #1f2329;
+    }
+    .shap-interaction-strength {
+      color: #8f959e;
+      margin-left: 6px;
+    }
+    .shap-interaction-desc {
+      color: #646a73;
+      margin-top: 2px;
+    }
+    .shap-nlp-text {
+      font-size: 13px;
+      color: #1f2329;
+      line-height: 1.7;
+      padding: 4px 0;
+    }
+    .shap-nlp-loading {
+      font-size: 12px;
+      color: #8f959e;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .shap-description {
+      margin-top: 14px;
+      font-size: 12px;
+      color: #8f959e;
+      line-height: 1.6;
+      padding: 10px 12px;
+      background: #f7f8fa;
+      border-radius: 6px;
+    }
+    .shap-description p { margin: 0; }
+
+    /* 候选人名称链接样式（消息气泡中） */
+    .msg-bubble .candidate-link {
+      color: var(--color-primary);
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 2px;
+    }
+    .msg-bubble .candidate-link:hover {
+      text-decoration-style: solid;
+      background: #e8f4ff;
+      border-radius: 2px;
+    }
+
+    /* ── 图片放大弹窗 ──────────────────────────────── */
+    .image-lightbox {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s ease;
+    }
+    .image-lightbox.hidden { display: none; opacity: 0; }
+    .image-lightbox-backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.75);
+    }
+    .image-lightbox-content {
+      position: relative; max-width: 92vw; max-height: 92vh;
+    }
+    .image-lightbox-content img {
+      max-width: 92vw; max-height: 88vh; border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .image-lightbox-close {
+      position: absolute; top: -12px; right: -12px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #fff; border: none; font-size: 20px;
+      cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      color: #333; line-height: 1;
+    }
+    .image-lightbox-close:hover { background: #f5f5f5; }
+
+/* SHAP图片加上cursor提示可双击 */
+#shap-waterfall-img.loaded { cursor: zoom-in; }
+
+/* ── SHAP面板Tab切换 ────────────────────────────── */
+.shap-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e5e6eb;
+  margin-bottom: 12px;
+}
+.shap-tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8f959e;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.shap-tab:hover { color: #1f2329; }
+.shap-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.shap-tab-content { display: none; }
+.shap-tab-content.active { display: block; }
+
+/* ── 简历面板样式 ────────────────────────────────── */
+.resume-loading {
+  color: #8f959e;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+.resume-content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #1f2329;
+}
+.resume-section {
+  margin-bottom: 16px;
+}
+.resume-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2329;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f1f3;
+  margin-bottom: 8px;
+}
+.resume-basic-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+.resume-info-item {
+  font-size: 12px;
+  color: #646a73;
+}
+.resume-info-item span {
+  color: #1f2329;
+  font-weight: 500;
+}
+.resume-edu-item {
+  position: relative;
+  padding-left: 14px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.resume-edu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.resume-edu-school {
+  font-weight: 600;
+  color: #1f2329;
+}
+.resume-edu-meta {
+  color: #8f959e;
+  font-size: 11px;
+  margin-top: 2px;
+}
+.resume-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+.resume-tag.fulltime { background: #e6f7ff; color: #1890ff; }
+.resume-tag.parttime { background: #fff7e6; color: #fa8c16; }
+.resume-tag.tier-985 { background: #f6ffed; color: #52c41a; }
+.resume-tag.tier-211 { background: #e6f7ff; color: #1890ff; }
+.resume-tag.tier-syl { background: #f9f0ff; color: #722ed1; }
+.resume-tag.tier-qs { background: #e6fffb; color: #08979c; }
+.resume-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.resume-skill-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #646a73;
+}
+.resume-exp-item {
+  margin-bottom: 10px;
+  padding-left: 10px;
+  border-left: 2px solid #e5e6eb;
+  font-size: 12px;
+}
+.resume-exp-company {
+  font-weight: 600;
+  color: #1f2329;
+}
+.resume-exp-position {
+  color: #646a73;
+}
+.resume-exp-desc {
+  color: #8f959e;
+  font-size: 11px;
+  margin-top: 2px;
+}
+.collapsed {
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 10px !important;
+  border: none !important;
+}
+
+    /* ── 响应式（小屏） ──────────────────────────────── */
+    @media (max-width: 640px) {
+      #sidebar { display: none; }
+      .msg-bubble { max-width: 85%; }
+      .shap-panel { position: fixed; right: 0; top: 0; bottom: 0; z-index: 1000; box-shadow: -4px 0 16px rgba(0,0,0,0.1); }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ───────── 左侧边栏 ───────── -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <div class="sidebar-logo">
+        <!-- <div class="logo-icon">🏢</div> -->
+        <span>智能招聘匹配</span>
+      </div>
+      <!-- 新建对话按钮已禁用
+      <button id="btn-new-chat">
+        <span class="icon">＋</span>
+        <span>新建对话</span>
+      </button>
+      -->
+    </div>
+
+    <div id="session-list">
+      <div class="sidebar-empty" id="session-empty">暂无对话，点击「新建对话」开始</div>
+    </div>
+
+    <!-- 用户信息栏 -->
+    <div id="sidebar-user">
+      <div class="user-info">
+        <span class="user-avatar">👤</span>
+        <span class="user-name" id="sidebar-username">未登录</span>
+      </div>
+      <button id="btn-logout" title="退出登录">退出</button>
+    </div>
+  </aside>
+
+  <!-- ───────── 主聊天区 ───────── -->
+  <main id="chat-panel">
+
+    <!-- 未选中会话时的占位提示 -->
+    <div id="no-session-hint">
+      <div class="nsh-icon"> </div>
+      <div class="nsh-title">智能招聘匹配助手</div>
+      <div class="nsh-desc">基于多模态特征融合与 SHAP 可解释性分析，帮您快速匹配最合适的候选人。</div>
+      <button id="btn-start-chat">开始新对话</button>
+    </div>
+
+    <!-- 有会话时显示的对话界面（默认隐藏） -->
+    <div id="chat-interface" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+
+      <!-- 欢迎屏幕（新对话初始状态） -->
+      <div id="welcome-screen" class="active">
+        <div class="ws-content">
+          <div class="ws-header">
+            <div class="ws-icon">🤖</div>
+            <h1 class="ws-title">你好，我是智能招聘匹配助手</h1>
+            <p class="ws-desc">基于多模态特征融合与 SHAP 可解释性分析，帮您快速找到最匹配的候选人，请告诉我你想做什么</p>
+          </div>
+
+          <div class="ws-feature-cards" id="ws-feature-cards">
+            <div class="ws-feature-card" data-feature="candidate-search">
+              <div class="ws-feature-card-icon">🔍</div>
+              <div class="ws-feature-card-body">
+                <div class="ws-feature-card-title">候选人智能搜索</div>
+                <div class="ws-feature-card-desc">用自然语言描述岗位需求，系统自动匹配最合适的候选人，支持按技能、经验、学历等多维度筛选</div>
+              </div>
+              <div class="ws-feature-card-examples">
+                <div class="ws-example-chip" data-text="找一个有5年以上后端经验的工程师">💻 搜索后端工程师</div>
+                <div class="ws-example-chip" data-text="帮我推荐有机器学习背景的算法工程师">🧠 搜索算法人才</div>
+                <div class="ws-example-chip" data-text="找一个熟悉React和Node.js的全栈工程师">🌐 搜索全栈工程师</div>
+              </div>
+            </div>
+            <div class="ws-feature-card" data-feature="multimodal-match">
+              <div class="ws-feature-card-icon">🎯</div>
+              <div class="ws-feature-card-body">
+                <div class="ws-feature-card-title">多模态智能匹配</div>
+                <div class="ws-feature-card-desc">融合简历文本、技能标签、教育背景、工作经历等多维度特征，计算综合匹配度排名</div>
+              </div>
+              <div class="ws-feature-card-examples">
+                <div class="ws-example-chip" data-text="帮我匹配一个有大厂经验、擅长分布式系统的Java工程师">🏢 精准匹配大厂人才</div>
+                <div class="ws-example-chip" data-text="找一个985硕士毕业、有3年以上NLP经验的候选人">🎓 学历+经验匹配</div>
+                <div class="ws-example-chip" data-text="推荐有产品经理和数据分析双重背景的候选人">📊 复合背景匹配</div>
+              </div>
+            </div>
+            <div class="ws-feature-card" data-feature="shap-explain">
+              <div class="ws-feature-card-icon">📈</div>
+              <div class="ws-feature-card-body">
+                <div class="ws-feature-card-title">SHAP 可解释性分析</div>
+                <div class="ws-feature-card-desc">基于 SHAP 算法解析匹配结果的每个维度贡献度，让您清晰了解为什么推荐该候选人</div>
+              </div>
+              <div class="ws-feature-card-examples">
+                <div class="ws-example-chip" data-text="分析一下刚才推荐的第一位候选人为什么匹配度最高">🔬 查看匹配原因</div>
+                <div class="ws-example-chip" data-text="对比前三位候选人的各维度得分">📊 对比候选人</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ws-input-wrapper">
+            <div class="ws-input-box">
+              <textarea
+                id="ws-input"
+                placeholder="例如：找一个有5年以上后端经验的工程师，或：推荐有机器学习背景的算法人才"
+                data-placeholder-index="0"
+              ></textarea>
+              <button id="ws-send-btn" class="ws-send-btn" title="发送">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 顶部标题（只在进入聊天模式后显示） -->
+      <div id="chat-header" style="display:none;">
+        <div class="ch-avatar">🤖</div>
+        <div style="flex: 1;">
+          <div id="chat-title">智能招聘匹配助手</div>
+          <div id="chat-subtitle">在线</div>
+        </div>
+        <button id="btn-new-session" title="创建新对话">
+          <span class="icon">+</span>
+          <span>新建对话</span>
+        </button>
+      </div>
+
+      <!-- 消息列表（只在进入聊天模式后显示） -->
+      <div id="messages-container" style="position:relative; display:none;">
+        <div id="welcome-hint">
+          <!-- <div class="wh-icon">👋</div> -->
+          <div class="wh-title">你好！我是智能招聘匹配助手</div>
+          <div class="wh-desc">帮您快速匹配最合适的候选人，支持自然语言搜索、多维度匹配和可解释性分析。</div>
+          <div class="wh-chips" id="quick-chips">
+            <span class="wh-chip" data-text="找一个有5年以上后端经验的工程师">💻 搜索后端工程师</span>
+            <span class="wh-chip" data-text="帮我推荐有机器学习背景的算法工程师">🧠 搜索算法人才</span>
+            <span class="wh-chip" data-text="推荐有产品经理和数据分析双重背景的候选人">📊 复合背景匹配</span>
+            <span class="wh-chip" data-text="分析一下推荐结果的匹配原因">🔬 查看匹配原因</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 滚动到底部按钮 -->
+      <button id="btn-scroll-bottom" title="滚动到底部">↓</button>
+
+      <!-- 输入区状态 -->
+      <div id="input-status"></div>
+
+      <!-- 追问建议条 -->
+      <div id="suggestions-bar"></div>
+
+      <!-- 输入框 -->
+      <div id="input-area">
+        <textarea
+          id="msg-input"
+          rows="1"
+          placeholder="描述您需要的候选人，Enter 发送…"
+        ></textarea>
+        <button id="btn-send" title="发送">
+          <!-- 纸飞机图标 -->
+          <svg class="send-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /chat-interface -->
+
+  </main><!-- /chat-panel -->
+
+  <!-- ───────── 右侧 SHAP 可解释性面板 ───────── -->
+  <aside id="shap-panel" class="shap-panel hidden">
+    <div class="shap-panel-header">
+      <span class="shap-panel-title">SHAP 可解释性分析</span>
+      <button id="shap-panel-close" class="shap-panel-close" title="关闭">&times;</button>
+    </div>
+    <div class="shap-panel-body">
+      <div class="shap-candidate-name" id="shap-candidate-name"></div>
+      
+      <!-- Tab切换 -->
+      <div class="shap-tabs" id="shap-tabs">
+        <button class="shap-tab active" data-tab="shap-chart-tab">SHAP分析</button>
+        <button class="shap-tab" data-tab="resume-tab">个人简历</button>
+      </div>
+
+      <!-- SHAP图表Tab -->
+      <div class="shap-tab-content active" id="shap-chart-tab">
+        <div class="shap-chart-container" id="shap-chart-container">
+          <img id="shap-waterfall-img" src="" alt="SHAP 瀑布图" />
+          <div class="shap-loading" id="shap-loading">加载中...</div>
+          <div class="shap-error" id="shap-error" style="display:none;">暂无该候选人的 SHAP 图表</div>
+        </div>
+        <div class="shap-legend">
+          <div class="shap-legend-item"><span class="shap-dot positive"></span> 正向贡献（推荐因素）</div>
+          <div class="shap-legend-item"><span class="shap-dot negative"></span> 负向贡献（不利因素）</div>
+        </div>
+        <div class="shap-description" id="shap-description">
+          <p>SHAP 瀑布图展示了各特征对该候选人匹配分数的贡献方向和大小。红色条表示正向贡献（推高匹配分，如经验匹配好），蓝色条表示负向贡献（降低匹配分，如技能不匹配）。</p>
+        </div>
+
+        <!-- Layer 1: 全局特征重要性柱状图（折叠） -->
+        <div class="shap-collapsible" id="shap-global-section">
+          <div class="shap-collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="shap-collapsible-title">📊 全局特征重要性</span>
+            <span class="shap-collapsible-arrow">▼</span>
+          </div>
+          <div class="shap-collapsible-body">
+            <img class="shap-global-img" id="shap-global-img" src="" alt="全局特征重要性柱状图" />
+            <div class="shap-global-loading" id="shap-global-loading">加载中...</div>
+            <div class="shap-global-error" id="shap-global-error" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Layer 3: 特征交互解释（折叠） -->
+        <div class="shap-collapsible" id="shap-interaction-section">
+          <div class="shap-collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="shap-collapsible-title">🔗 特征交互分析</span>
+            <span class="shap-collapsible-arrow">▼</span>
+          </div>
+          <div class="shap-collapsible-body">
+            <ul class="shap-interaction-list" id="shap-interaction-list"></ul>
+            <div class="shap-nlp-loading" id="shap-interaction-loading">加载中...</div>
+          </div>
+        </div>
+
+        <!-- Layer 4: 自然语言解释（折叠） -->
+        <div class="shap-collapsible" id="shap-nlp-section">
+          <div class="shap-collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="shap-collapsible-title">💬 自然语言解释</span>
+            <span class="shap-collapsible-arrow">▼</span>
+          </div>
+          <div class="shap-collapsible-body">
+            <div class="shap-nlp-text" id="shap-nlp-text"></div>
+            <div class="shap-nlp-loading" id="shap-nlp-loading">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 个人简历Tab -->
+      <div class="shap-tab-content" id="resume-tab">
+        <div class="resume-loading" id="resume-loading">加载简历中...</div>
+        <div class="resume-content" id="resume-content" style="display:none;"></div>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /app -->
+
+<!-- 图片放大弹窗 -->
+<div id="image-lightbox" class="image-lightbox hidden" tabindex="-1">
+  <div class="image-lightbox-backdrop"></div>
+  <div class="image-lightbox-content">
+    <img id="lightbox-img" src="" alt="放大查看" />
+    <button class="image-lightbox-close" title="关闭">&times;</button>
+  </div>
+</div>
+
+<!-- Toast 容器 -->
+<div id="toast-wrap"></div>
+
+<!-- ───────── 人才表格模块（样式 + Modal DOM，逻辑见 talent_table.js） ───────── -->
+<style>
+/* ── 人才表格触发按钮气泡 ─────────────────────────── */
+.talent-table-trigger {
+  /* 布局 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  
+  /* 尺寸 */
+  width: 100%;
+  padding: 20px 24px;
+  min-height: 85px;
+  
+  /* 外观：圆角、边框、阴影 */
+  border-radius: 12px;
+  border: 1px solid #e5e6eb;
+  background-color: #ffffff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  
+  /* 字体 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: left;
+  color: #c5c6c9;
+  
+  /* 交互 */
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+}
+
+.talent-table-trigger:hover {
+  background-color: #f8f9fb;
+  border-color: #d0d3db;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10), 0 3px 6px rgba(15, 23, 42, 0.06);
+}
+
+.talent-table-trigger:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* 左侧内容区域 */
+.talent-table-trigger .ttt-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.talent-table-trigger .ttt-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2329;
+  margin-bottom: 6px;
+}
+
+.talent-table-trigger .ttt-desc {
+  font-size: 14px;
+  color: #8f959e;
+  line-height: 1.6;
+}
+
+/* 右侧箭头区域 */
+.talent-table-trigger .ttt-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  font-size: 15px;
+  color: #cdced0;
+  line-height: 1;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.talent-table-trigger:hover .ttt-arrow {
+  color: #8f959e;
+  transform: translateX(3px);
+}
+
+  /* ── 右侧预览面板 ────────────────────────────────── */
+  #preview-table-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    background-color: #ffffff;
+    border-left: 1px solid #e8e8e8;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    z-index: 999;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+  #preview-table-panel.visible {
+    width: 60%;
+    transition: none;
+  }
+  #preview-table-panel.dragging {
+    transition: none;
+  }
+
+  /* 面板拖拽把手 */
+  .preview-panel-resize-handle {
+    position: absolute;
+    left: -5px;
+    top: 0;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+    user-select: none;
+    z-index: 1000;
+  }
+  .preview-panel-resize-handle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-left: 2px solid #1890ff;
+  }
+
+  /* 面板头部 */
+  .preview-table-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e8e8e8;
+    background: #fafbfc;
+    flex-shrink: 0;
+  }
+  .preview-table-panel-header .ptp-icon { font-size: 18px; }
+  .preview-table-panel-header .ptp-title {
+    flex: 1; font-size: 14px; font-weight: 600; color: #1f2329;
+  }
+.preview-table-panel-header #preview-table-download {
+width: auto; height: 28px;
+background: none; border: 1px solid #e5e6eb; cursor: pointer;
+border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
+font-size: 12px; color: #4e5969; padding: 0 10px;
+transition: all var(--transition); flex-shrink: 0; font-family: inherit;
+}
+.preview-table-panel-header #preview-table-download:hover {
+background: #f0f5ff; color: var(--color-primary); border-color: var(--color-primary);
+}
+.preview-table-panel-header #preview-table-close {
+width: 28px; height: 28px;
+    background: none; border: none; cursor: pointer;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #8f959e;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+  .preview-table-panel-header #preview-table-close:hover {
+    background: #f5f6f8; color: #333;
+  }
+
+  /* 面板内容区（表格滚动容器） */
+  .preview-table-content {
+    flex: 1;
+    overflow: auto;
+    padding: 16px 20px;
+  }
+
+  /* 聊天区 split 模式：宽度由 JS 在 openPanel 中通过 style.flex/style.width 动态设置
+       不使用 CSS !important，避免拖拽时 JS 设置的 inline style 被覆盖 */
+  #chat-panel.split { }
+  #chat-panel.dragging {
+    transition: none !important;
+  }
+
+  /* 侧边栏隐藏 */
+  #sidebar.hidden {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border: none;
+    transition: none;
+  }
+
+  /* 气泡激活态 */
+  .msg-bubble.preview-active {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 2px rgba(22,119,255,.25) !important;
+  }
+
+  /* ── 表格本体 ─────────────────────────────────────── */
+  .talent-table-wrapper {
+    width: 100%;
+    min-width: 640px;
+    max-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    background: #fff;
+    table-layout: fixed;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e8e8e8;
+  }
+  .talent-table-wrapper thead {
+    position: sticky; top: 0; z-index: 10; background: #fff;
+  }
+  .talent-table-wrapper thead th {
+    background: linear-gradient(180deg, #fafbfc 0%, #f5f6f8 100%);
+    padding: 11px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #4e5969;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid #e8e8e8;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .talent-table-wrapper tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f2f3f5;
+    color: #4e5969;
+    vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .talent-table-wrapper tbody tr:last-child td { border-bottom: none; }
+  .talent-table-wrapper .table-row {
+    transition: background .15s ease;
+  }
+  .talent-table-wrapper .table-row:hover { background: #f7f8fa; }
+  .talent-table-wrapper .table-row:hover td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-primary);
+  }
+
+  .talent-table-wrapper .col-name       { width: 14%; min-width: 100px; }
+  .talent-table-wrapper .col-basic-info { width: 14%; min-width: 110px; }
+  .talent-table-wrapper .col-hit        { width: 22%; min-width: 130px; }
+  .talent-table-wrapper .col-reason     { width: 50%; min-width: 200px; }
+
+  .talent-name-cell .t-name {
+    font-weight: 600; color: #1677ff; word-break: break-word; font-size: 13px;
+  }
+  .talent-name-cell .t-mis,
+  .talent-name-cell .t-empno { font-size: 11px; color: #aaa; line-height: 1.4; }
+  .talent-name-cell .t-mis { margin-top: 2px; }
+  .talent-name-cell .t-empno { color: #c9cdd4; }
+  .talent-name-cell .t-empno-link {
+    font-size: 11px; color: #1677ff; text-decoration: none; line-height: 1.4;
+  }
+  .talent-name-cell .t-empno-link:hover { text-decoration: underline; }
+
+  .text-cell { font-size: 12px; color: #4e5969; line-height: 1.6; }
+  .text-cell div { margin-bottom: 3px; }
+  .text-cell div:last-child { margin-bottom: 0; }
+
+  .conditions-cell { font-size: 12px; color: #4e5969; line-height: 1.6; }
+  .conditions-cell div { margin-bottom: 4px; }
+  .conditions-cell div:last-child { margin-bottom: 0; }
+  .conditions-cell strong { font-weight: 500; color: #ff9c00; }
+
+  .reason-cell {
+    font-size: 12px; color: #1f2329; line-height: 1.7;
+    word-break: break-word; font-weight: 400;
+  }
+
+  .reason-detail-container { margin-top: 8px; }
+  .reason-detail-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    background: #f5f5f5; border: 1px solid #e5e6eb; border-radius: 4px;
+    cursor: pointer; font-size: 12px; color: #666;
+    transition: all var(--transition); user-select: none;
+  }
+  .reason-detail-toggle:hover { background: #eef0f2; color: #333; }
+  .reason-detail-arrow {
+    font-size: 14px; transition: transform .3s ease; color: #8f959e;
+  }
+  .reason-detail-arrow.expanded { transform: rotate(180deg); }
+  .reason-detail-content {
+    max-height: 0; overflow: hidden;
+    transition: max-height .3s ease;
+    margin-top: 8px; padding: 0 12px;
+    background: #fafafa;
+    border-left: 3px solid #d9d9d9; border-radius: 4px;
+    font-size: 12px; color: #4e5969; line-height: 1.6;
+  }
+  .reason-detail-content.expanded {
+    max-height: 500px; padding: 12px; overflow-y: auto;
+  }
+  .reason-detail-item {
+    margin-bottom: 12px; padding-bottom: 12px;
+    border-bottom: 1px dashed #e5e6eb;
+  }
+  .reason-detail-item:last-child {
+    margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+  }
+  .reason-detail-source {
+    display: inline-block; margin-top: 4px; padding: 2px 8px;
+    background: #e8f4ff; color: #3370ff;
+    border-radius: 3px; font-size: 11px; font-weight: 500;
+  }
+
+  .no-more-row td {
+    text-align: center; padding: 16px !important; color: #999; font-size: 13px;
+  }
+
+  /* ── 故事线按钮 ───────────────────────────────────── */
+  .story-line-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .story-line-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, .4);
+  }
+  .story-line-btn:active { transform: translateY(0); }
+
+  /* ── 故事线弹窗 ───────────────────────────────────── */
+  #talent-story-popup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 20000;
+    align-items: center;
+    justify-content: center;
+  }
+  #talent-story-popup-overlay.show { display: flex; }
+  #talent-story-popup {
+    position: relative;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    width: 560px;
+    max-width: 90vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #talent-story-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+  }
+  #talent-story-popup-header h3 { margin: 0; font-size: 15px; font-weight: 600; color: #1d2129; }
+  #talent-story-popup-close {
+    width: 28px; height: 28px;
+    background: none; border: none; cursor: pointer;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #8f959e;
+    transition: background .15s, color .15s;
+  }
+  #talent-story-popup-close:hover { background: #f5f6f8; color: #333; }
+  #talent-story-popup-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  #talent-story-popup-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #4e5969;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
+
+<!-- 故事线弹窗 DOM -->
+<div id="talent-story-popup-overlay" onclick="if(event.target===this) window.TalentTable._closeStoryPopup()">
+  <div id="talent-story-popup">
+    <div id="talent-story-popup-header">
+      <h3>故事线</h3>
+      <button id="talent-story-popup-close" onclick="window.TalentTable._closeStoryPopup()" title="关闭">✕</button>
+    </div>
+    <div id="talent-story-popup-body">
+      <div id="talent-story-popup-text"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 右侧表格预览面板 -->
+<div id="preview-table-panel">
+  <div class="preview-table-panel-header">
+    <span class="ptp-icon">📊</span>
+    <span class="ptp-title">候选人列表</span>
+    <button id="preview-table-download" title="下载表格">⬇ 下载</button>
+    <button id="preview-table-close" title="关闭">✕</button>
+  </div>
+  <div class="preview-table-content"></div>
+</div>
+
+<!-- 火星活跃度表格样式 -->
+<style>
+/* ── 火星活跃度名单面板样式 ─────────────────────────── */
+.hx-panel-content {
+  padding: 12px 0;
+}
+.hx-group-card {
+  margin: 0 0 12px 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.hx-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f6f8 100%);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.hx-group-header:hover {
+  background: linear-gradient(180deg, #f0f5ff 0%, #e8f0fe 100%);
+}
+.hx-group-icon { font-size: 16px; }
+.hx-group-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2329;
+}
+.hx-group-count {
+  font-size: 12px;
+  color: #8f959e;
+  background: #f2f3f5;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.hx-group-arrow {
+  font-size: 12px;
+  color: #8f959e;
+  transition: transform 0.2s ease;
+  width: 14px;
+  text-align: center;
+}
+.hx-group-body {
+  padding: 0 16px 14px;
+}
+.hx-sub-section {
+  margin-top: 14px;
+}
+.hx-sub-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.hx-sub-danger { color: #cf1322; }
+.hx-sub-warn   { color: #d46b08; }
+.hx-sub-count {
+  font-size: 11px;
+  font-weight: 400;
+  color: #8f959e;
+  background: #f5f5f5;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+</style>
+
+<!-- 人才表格逻辑 -->
+<script src="/static/talent_table.js"></script>
+<!-- 火星活跃度表格逻辑 -->
+<script src="/static/huoxing_table.js"></script>
+
+<!-- ───────────────────── JavaScript ───────────────────── -->
+<script>
+/**
+ * HR 智能助手前端主逻辑
+ *
+ * 架构说明：
+ *   - ApiClient   : 封装所有后端 HTTP 请求与 SSE 连接，与 UI 解耦
+ *   - ChatStore   : 管理会话列表与消息数据（纯数据层）
+ *   - ChatUI      : 管理 DOM 操作与交互（纯视图层）
+ *   - App         : 组装以上三层，处理业务逻辑
+ */
+
+/* ──────────────────────────────────────────────────────────
+   配置
+────────────────────────────────────────────────────────── */
+const CONFIG = {
+  apiBase: '',   // 与 frontend_server 同域部署时留空，请求自动发往当前域名/端口
+  // apiBase: 'http://hrba.testing.ide:5202',
+  // apiBase: 'http://zhangjiaxin46-7.ide:9031',
+  typing_heartbeat_ms: 500,           // 心跳间隔（用于超时检测）
+  request_timeout_ms: 120_0000,        // 最长等待时间（2 分钟）
+};
+
+/* ──────────────────────────────────────────────────────────
+   工具函数
+────────────────────────────────────────────────────────── */
+function formatTime(date = new Date()) {
+  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * 为较长的 bot 消息气泡添加折叠/展开功能
+ * 默认展开，气泡下方会显示一个简洁的箭头按钮（参考 Semi Design）。
+ * @param {HTMLElement} bubbleEl - .msg-bubble 元素
+ * @param {number} threshold - 触发折叠的高度阈值（px），默认 400
+ */
+function enableBubbleCollapse(bubbleEl, threshold = 400) {
+
+  // 检查气泡元素有效性
+  if (!bubbleEl) {
+    console.warn('[enableBubbleCollapse] 气泡元素为空，跳过');
+    return;
+  }
+
+  // 检查是否为用户消息（用户消息不需要折叠）
+  if (bubbleEl.classList.contains('user-avatar')) {
+    return;
+  }
+
+  if (bubbleEl.closest('.msg-row.user')) {
+    return;
+  }
+
+  // 如果内容不够长，不添加折叠
+  const contentHeight = bubbleEl.scrollHeight;
+  const computedStyle = window.getComputedStyle(bubbleEl);
+  const isHidden = bubbleEl.offsetParent === null;
+
+  
+  if (contentHeight <= threshold) {
+    return;
+  }
+
+
+  // 给 bubble 套上折叠结构（默认是展开的）
+  bubbleEl.classList.add('collapsible-wrapper');
+
+  // 将现有内容包裹在 .bubble-content 中
+  const contentWrap = document.createElement('div');
+  contentWrap.className = 'bubble-content';
+  
+  while (bubbleEl.firstChild) {
+    contentWrap.appendChild(bubbleEl.firstChild);
+  }
+  bubbleEl.appendChild(contentWrap);
+
+  // 创建折叠/展开按钮（简洁管、指向箭头 + 文字）
+  const btn = document.createElement('button');
+  btn.className = 'bubble-collapse-btn';
+  btn.innerHTML = '<span class="collapse-arrow">▲</span><span class="collapse-text">收起</span>';
+  
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isCollapsed = bubbleEl.classList.contains('collapsed');
+    
+    bubbleEl.classList.toggle('collapsed', !isCollapsed);
+    const textEl = btn.querySelector('.collapse-text');
+    const newState = isCollapsed ? '收起' : '展开全文';
+    textEl.textContent = newState;
+    
+  });
+  
+  bubbleEl.appendChild(btn);
+}
+
+/* Markdown → HTML（带代码高亮） */
+const _md = window.markdownit({
+  html: false,
+  linkify: true,
+  typographer: true,
+  highlight(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return '<pre><code class="hljs language-' + lang + '">' +
+          hljs.highlight(code, { language: lang }).value +
+          '</code></pre>';
+      } catch (_) {}
+    }
+    return '<pre><code class="hljs">' + escapeHtml(code) + '</code></pre>';
+  },
+});
+function renderMarkdown(text) {
+  const raw = _md.render(text || '');
+  return DOMPurify.sanitize(raw, { ADD_ATTR: ['target'] });
+}
+
+/* ──────────────────────────────────────────────────────────
+   ApiClient — 封装后端通信，与 UI 完全解耦
+────────────────────────────────────────────────────────── */
+class ApiClient {
+  constructor(baseUrl) {
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+  }
+
+  /** 获取认证头 */
+  _authHeaders() {
+    const token = localStorage.getItem('hr_agent_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    return headers;
+  }
+
+  /** 检查响应是否为 401 未授权，若是则跳转登录页 */
+  _checkAuth(res) {
+    if (res.status === 401) {
+      localStorage.removeItem('hr_agent_token');
+      localStorage.removeItem('hr_agent_user');
+      window.location.href = '/login';
+      throw new Error('登录已过期，请重新登录');
+    }
+  }
+
+  /** 提交用户反馈（点赞/点踩） */
+  async submitFeedback(sessionId, rating, messageId = '') {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/feedback`, {
+        method: 'POST',
+        headers: this._authHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+          session_id: sessionId,
+          message_id: messageId,
+          rating: rating,
+        }),
+      });
+      if (!res.ok) {
+        console.warn(`[Feedback] 提交失败: HTTP ${res.status}`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('[Feedback] 提交异常:', e.message);
+      return false;
+    }
+  }
+
+  /** 健康检查 */
+  async health() {
+    const res = await fetch(`${this.baseUrl}/api/health`);
+    return res.ok;
+  }
+
+  /** 创建新会话 */
+  async createSession(userId = null) {
+    const res = await fetch(`${this.baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: this._authHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ user_id: userId }),
+    });
+    this._checkAuth(res);
+    if (!res.ok) throw new Error(`创建会话失败: ${res.status}`);
+    return res.json();
+  }
+
+  /** 获取所有会话 */
+  async listSessions() {
+    const res = await fetch(`${this.baseUrl}/api/sessions`, {
+      headers: this._authHeaders(),
+      credentials: 'include',
+    });
+    this._checkAuth(res);
+    if (!res.ok) throw new Error(`获取会话列表失败: ${res.status}`);
+    const data = await res.json();
+    return data.sessions || [];
+  }
+
+  /** 删除会话 */
+  async deleteSession(sessionId) {
+    const res = await fetch(`${this.baseUrl}/api/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: this._authHeaders(),
+      credentials: 'include',
+    });
+    this._checkAuth(res);
+    if (!res.ok) throw new Error(`删除会话失败: ${res.status}`);
+    return res.json();
+  }
+
+  /** 获取会话历史 */
+  async getHistory(sessionId) {
+    const res = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/history`, {
+      headers: this._authHeaders(),
+      credentials: 'include',
+    });
+    this._checkAuth(res);
+    if (!res.ok) throw new Error(`获取历史失败: ${res.status}`);
+    const data = await res.json();
+    return data.messages || [];
+  }
+
+  /**
+   * 发送消息（SSE 流式接收）
+   *
+   * @param {string} sessionId
+   * @param {string} message
+   * @param {object} callbacks
+   *   - onThinking()           Agent 开始处理
+   *   - onDelta(content)       收到流式文本片段（增量）
+   *   - onMessage(content)     收到完整回复
+   *   - onMeta(meta)           会话元信息更新
+   *   - onError(errMsg)        发生错误
+   *   - onDone()               本次请求结束
+   *   - onSuggestions(list)    收到追问建议列表
+   *   - onInteraction(data)    Agent 需要用户交互确认（多 Agent 选择等）
+   */
+  sendMessage(sessionId, message, callbacks = {}) {
+    const { onThinking, onDelta, onMessage, onMeta, onError, onDone, onSuggestions, onInteraction } = callbacks;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.request_timeout_ms);
+
+    fetch(`${this.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: this._authHeaders(),
+      body: JSON.stringify({ session_id: sessionId, message }),
+      signal: controller.signal,
+    }).then(async res => {
+      if (!res.ok) {
+        const errText = await res.text();
+        onError && onError(`请求失败 (${res.status}): ${errText}`);
+        onDone && onDone();
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      const pump = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // 按双换行切割 SSE 事件块
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop();
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+
+            let eventName = 'message';
+            let dataStr = '';
+
+            for (const line of part.split('\n')) {
+              if (line.startsWith('event: '))      eventName = line.slice(7).trim();
+              else if (line.startsWith('data: '))  dataStr   = line.slice(6).trim();
+            }
+
+            if (!dataStr) continue;
+
+            switch (eventName) {
+              case 'thinking':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onThinking && onThinking(d.text || '');
+                } catch (_) {
+                  onThinking && onThinking('');
+                }
+                break;
+              case 'delta':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onDelta && onDelta(d.content || '');
+                } catch (_) {}
+                break;
+              case 'message':
+                try {
+                  const d = JSON.parse(dataStr);
+                  if (d.type === 'talent_table') {
+                    onMessage && onMessage({ type: 'talent_table', data: d });
+                  } else if (d.type === 'huoxing_data') {
+                    onMessage && onMessage({ type: 'huoxing_data', data: d.content });
+                  } else if (d._stream_end) {
+                    // 流式结束事件，传递完整对象（包含 _stream_end 标记）
+                    onMessage && onMessage({ _stream_end: true, content: d.content || '' });
+                  } else {
+                    onMessage && onMessage(d.content || '');
+                  }
+                } catch (_) {}
+                break;
+              case 'meta':
+                try { onMeta && onMeta(JSON.parse(dataStr)); } catch (_) {}
+                break;
+              case 'error':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onError && onError(d.message || '未知错误');
+                } catch (_) { onError && onError('未知错误'); }
+                break;
+              case 'suggestions':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onSuggestions && onSuggestions(d.suggestions || []);
+                } catch (_) {}
+                break;
+              case 'interaction':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onInteraction && onInteraction(d);
+                } catch (_) {}
+                break;
+              case 'done':
+                clearTimeout(timeoutId);
+                onDone && onDone();
+                return;
+            }
+          }
+        }
+        clearTimeout(timeoutId);
+        onDone && onDone();
+      };
+
+      pump().catch(err => {
+        clearTimeout(timeoutId);
+        onError && onError(err.name === 'AbortError' ? '请求超时，请重试' : err.message || '网络错误');
+        onDone && onDone();
+      });
+
+    }).catch(err => {
+      clearTimeout(timeoutId);
+      onError && onError(err.name === 'AbortError' ? '请求超时，请重试' : `网络连接失败: ${err.message}`);
+      onDone && onDone();
+    });
+
+    return () => controller.abort();
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   ChatStore — 纯数据层
+────────────────────────────────────────────────────────── */
+class ChatStore {
+  constructor() {
+    this.sessions = [];
+    this.currentSessionId = null;
+    this.messages = {};
+    this.suggestions = {};   // session_id -> string[]
+  }
+
+  addSession(meta, toEnd = false) {
+    if (toEnd) {
+      this.sessions.push(meta);
+    } else {
+      this.sessions.unshift(meta);
+    }
+    if (!this.messages[meta.session_id]) this.messages[meta.session_id] = [];
+  }
+
+  removeSession(sessionId) {
+    this.sessions = this.sessions.filter(s => s.session_id !== sessionId);
+    delete this.messages[sessionId];
+  }
+
+  updateSessionMeta(sessionId, updates) {
+    const s = this.sessions.find(s => s.session_id === sessionId);
+    if (s) Object.assign(s, updates);
+  }
+
+  setCurrentSession(sessionId) { this.currentSessionId = sessionId; }
+
+  getMessages(sessionId) { return this.messages[sessionId] || []; }
+
+  addMessage(sessionId, msg) {
+    if (!this.messages[sessionId]) this.messages[sessionId] = [];
+    this.messages[sessionId].push(msg);
+  }
+
+  setSuggestions(sessionId, list) { this.suggestions[sessionId] = list || []; }
+
+  getSuggestions(sessionId) { return this.suggestions[sessionId] || []; }
+}
+
+/* ──────────────────────────────────────────────────────────
+   ChatUI — 纯视图层（仅操作 DOM）
+────────────────────────────────────────────────────────── */
+class ChatUI {
+  constructor() {
+    this.$sessionList       = document.getElementById('session-list');
+    this.$sessionEmpty      = document.getElementById('session-empty');
+    this.$noSessionHint     = document.getElementById('no-session-hint');
+    this.$chatInterface     = document.getElementById('chat-interface');
+    this.$messagesContainer = document.getElementById('messages-container');
+    this.$welcomeHint       = document.getElementById('welcome-hint');
+    this.$chatTitle         = document.getElementById('chat-title');
+    this.$msgInput          = document.getElementById('msg-input');
+    this.$btnSend           = document.getElementById('btn-send');
+    this.$inputStatus       = document.getElementById('input-status');
+    this.$btnScrollBot      = document.getElementById('btn-scroll-bottom');
+    this.$toastWrap         = document.getElementById('toast-wrap');
+    this.$suggestionsBar    = document.getElementById('suggestions-bar');
+    
+    // 欢迎屏幕相关
+    this.$welcomeScreen     = document.getElementById('welcome-screen');
+    this.$wsInput           = document.getElementById('ws-input');
+    this.$wsSendBtn         = document.getElementById('ws-send-btn');
+    this.$chatHeader        = document.getElementById('chat-header');
+
+    this._typingRowId = null;
+    this._isAtBottom  = true;
+    this._setupScrollDetect();
+    this._autoResizeInput();
+    this._autoResizeWsInput();
+  }
+
+  /* ── 会话列表渲染 ─────────────────────────────────── */
+
+  renderSessionList(sessions, currentId, onSelect, onDelete) {
+    Array.from(this.$sessionList.querySelectorAll('.session-item')).forEach(el => el.remove());
+    this.$sessionEmpty.style.display = sessions.length ? 'none' : 'block';
+
+    sessions.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'session-item' + (s.session_id === currentId ? ' active' : '');
+      item.dataset.id = s.session_id;
+      // item.innerHTML = `
+      //   <span class="si-icon">💬</span>
+      //   <span class="si-title">${escapeHtml(s.title || '新对话')}</span>
+      //   <button class="si-del" title="删除">✕</button>
+      // `;
+      item.innerHTML = `
+        <span class="si-title">${escapeHtml(s.title || '新对话')}</span>
+        <button class="si-del" title="删除">✕</button>
+      `;
+      item.addEventListener('click', e => {
+        if (e.target.closest('.si-del')) return;
+        onSelect(s.session_id);
+      });
+      item.querySelector('.si-del').addEventListener('click', e => {
+        e.stopPropagation();
+        onDelete(s.session_id);
+      });
+      this.$sessionList.appendChild(item);
+    });
+  }
+
+  setActiveSession(sessionId) {
+    this.$sessionList.querySelectorAll('.session-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === sessionId);
+    });
+  }
+
+  updateSessionTitle(sessionId, title) {
+    const item = this.$sessionList.querySelector(`.session-item[data-id="${sessionId}"]`);
+    if (item) item.querySelector('.si-title').textContent = title;
+  }
+
+  /* ── 会话界面切换 ─────────────────────────────────── */
+
+  showChatInterface(title = '智能招聘匹配助手') {
+    this.$noSessionHint.style.display = 'none';
+    this.$chatInterface.style.display = 'flex';
+    this.$chatTitle.textContent = title;
+  }
+
+  showNoSessionHint() {
+    this.$noSessionHint.style.display = 'flex';
+    this.$chatInterface.style.display = 'none';
+  }
+
+  /* ── 消息渲染 ─────────────────────────────────────── */
+
+  clearMessages() {
+    this.$messagesContainer.innerHTML = '';
+    this.$welcomeHint.style.display = 'flex';
+    this.$messagesContainer.appendChild(this.$welcomeHint);
+  }
+
+  renderHistoryMessages(messages) {
+    console.log(messages);
+    Array.from(this.$messagesContainer.querySelectorAll('.msg-row')).forEach(el => el.remove());
+    this.$welcomeHint.style.display = messages.length ? 'none' : 'flex';
+    messages.forEach(m => this._appendBubble(m.role, m.content, m));
+    this._scrollToBottom(false);
+  }
+
+  appendUserBubble(content) {
+    this.$welcomeHint.style.display = 'none';
+    this._appendBubble('user', content);
+    this._scrollToBottom(true);
+  }
+
+  appendTypingBubble() {
+    this.$welcomeHint.style.display = 'none';
+    const id = `typing-${Date.now()}`;
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.id = id;
+    row.innerHTML = `
+      <div class="msg-avatar bot-avatar">🤖</div>
+      <div class="msg-bubble typing-bubble">
+        <span class="typing-status-text"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
+    `;
+    this.$messagesContainer.appendChild(row);
+    this._typingRowId = id;
+    this._scrollToBottom(true);
+    return id;
+  }
+
+  /** 更新思考状态气泡中的状态文字 */
+  updateThinkingStatus(text) {
+    if (!this._typingRowId) return;
+    const row = document.getElementById(this._typingRowId);
+    if (!row) return;
+    const bubble = row.querySelector('.msg-bubble');
+    if (!bubble || !bubble.classList.contains('typing-bubble')) return;
+    const statusEl = bubble.querySelector('.typing-status-text');
+    if (!statusEl) return;
+    if (text) {
+      statusEl.textContent = text;
+      statusEl.classList.add('visible');
+    } else {
+      statusEl.classList.remove('visible');
+    }
+  }
+
+  replaceTypingBubble(content, isStreamEnd = false) {
+    if (!this._typingRowId) {
+      if (isStreamEnd) {
+        // 流式结束时不重复渲染，内容已经通过 appendDelta 渲染完毕
+        return;
+      }
+      this._appendBubble('bot', content);
+    } else {
+      const row = document.getElementById(this._typingRowId);
+      if (row) {
+        const bubble = row.querySelector('.msg-bubble');
+        bubble.classList.remove('typing-bubble');
+        bubble.innerHTML = renderMarkdown(content);
+        // 为长文本消息添加折叠/展开功能
+        enableBubbleCollapse(bubble);
+        // 将候选人名称转换为可点击链接（SHAP 面板）
+        if (window.linkifyCandidateNames) {
+          setTimeout(() => window.linkifyCandidateNames(bubble), 100);
+        }
+        // 添加反馈按钮
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'msg-feedback';
+        feedbackDiv.innerHTML = `
+          <button class="msg-feedback-btn" data-rating="1" title="回答有帮助">
+            <span>👍</span><span class="fb-label">有帮助</span>
+          </button>
+          <button class="msg-feedback-btn" data-rating="0" title="回答需改进">
+            <span>👎</span><span class="fb-label">需改进</span>
+          </button>`;
+        bubble.appendChild(feedbackDiv);
+        const time = document.createElement('div');
+        time.className = 'msg-time';
+        time.textContent = formatTime();
+        row.appendChild(time);
+        // 绑定反馈按钮事件
+        this._bindFeedbackButtons(row);
+      }
+      this._typingRowId = null;
+    }
+    this._scrollToBottom(this._isAtBottom);
+  }
+
+  /**
+   * 流式追加文本到 typing bubble。
+   * 首次调用时将 typing 动画替换为内容容器，后续调用追加文本。
+   * @param {string} delta - 新增的文本片段
+   */
+  appendDelta(delta) {
+    if (!delta) return;
+
+    if (!this._streamBubbleContent) {
+      // 首次 delta：把 typing 动画替换为内容展示
+      this._streamBubbleContent = '';
+      if (this._typingRowId) {
+        const row = document.getElementById(this._typingRowId);
+        if (row) {
+          const bubble = row.querySelector('.msg-bubble');
+          bubble.classList.remove('typing-bubble');
+          bubble.classList.add('streaming-bubble');
+          bubble.innerHTML = '';
+        }
+      }
+    }
+
+    this._streamBubbleContent += delta;
+
+    if (this._typingRowId) {
+      const row = document.getElementById(this._typingRowId);
+      if (row) {
+        const bubble = row.querySelector('.msg-bubble');
+        if (bubble) {
+          bubble.innerHTML = renderMarkdown(this._streamBubbleContent);
+        }
+      }
+      this._scrollToBottom(false);
+    }
+  }
+
+  /** 清除流式状态（在流式结束时调用） */
+  finalizeStreamBubble() {
+    this._streamBubbleContent = null;
+    if (this._typingRowId) {
+      const row = document.getElementById(this._typingRowId);
+      if (row) {
+        const bubble = row.querySelector('.msg-bubble');
+        if (bubble) {
+          bubble.classList.remove('streaming-bubble');
+          // 为长文本消息添加折叠/展开功能
+          enableBubbleCollapse(bubble);
+          // 将候选人名称转换为可点击链接（SHAP 面板）
+          if (window.linkifyCandidateNames) {
+            setTimeout(() => window.linkifyCandidateNames(bubble), 100);
+          }
+          // 添加反馈按钮
+          const feedbackDiv = document.createElement('div');
+          feedbackDiv.className = 'msg-feedback';
+          feedbackDiv.innerHTML = `
+            <button class="msg-feedback-btn" data-rating="1" title="回答有帮助">
+              <span>👍</span><span class="fb-label">有帮助</span>
+            </button>
+            <button class="msg-feedback-btn" data-rating="0" title="回答需改进">
+              <span>👎</span><span class="fb-label">需改进</span>
+            </button>`;
+          bubble.appendChild(feedbackDiv);
+        }
+        const time = document.createElement('div');
+        time.className = 'msg-time';
+        time.textContent = formatTime();
+        row.appendChild(time);
+        // 绑定反馈按钮事件
+        this._bindFeedbackButtons(row);
+      }
+      this._typingRowId = null;
+    }
+  }
+
+  removeTypingBubble() {
+    if (this._typingRowId) {
+      document.getElementById(this._typingRowId)?.remove();
+      this._typingRowId = null;
+    }
+  }
+
+  /* ── 输入区控制 ──────────────────────────────────── */
+
+  setInputEnabled(enabled) {
+    this.$msgInput.disabled = !enabled;
+    this.$btnSend.disabled  = !enabled;
+    if (enabled) this.$msgInput.focus();
+  }
+
+  getInputValue()  { return this.$msgInput.value.trim(); }
+  clearInput()     { this.$msgInput.value = ''; this.$msgInput.style.height = 'auto'; }
+  setInputStatus(text = '') { this.$inputStatus.textContent = text; }
+
+  /* ── Toast 通知 ──────────────────────────────────── */
+
+  showToast(msg, type = 'info', durationMs = 3000) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    el.textContent = msg;
+    this.$toastWrap.appendChild(el);
+    setTimeout(() => {
+      el.style.animation = 'toastOut .25s ease forwards';
+      setTimeout(() => el.remove(), 260);
+    }, durationMs);
+  }
+
+  /* ── 私有辅助 ─────────────────────────────────────── */
+
+  _appendBubble(role, content, message = null) {
+    const isUser = role === 'user';
+    
+    // 如果是表格类型的消息，特殊处理
+    if (!isUser && message && message.type === 'talent_table' && message.tableData) {
+      const tableData = message.tableData;
+      const talentList = tableData.content || [];
+      const totalNum = tableData.num_dict?.total_num || talentList.length;
+      
+      // 为历史表格分配新的 key 并存储数据
+      const tableKey = message.tableKey || `tt_${Date.now()}_history`;
+      window.TalentTable._storeTableData(tableKey, talentList);
+      
+      const row = document.createElement('div');
+      row.className = 'msg-row bot';
+      row.innerHTML = `
+        <div class="msg-avatar bot-avatar">🤖</div>
+        <div class="msg-bubble" style="padding:0;overflow:hidden;">
+          <button class="talent-table-trigger" data-table-key="${tableKey}"
+                  onclick="window.TalentTable.open('${tableKey}')">
+            <div class="ttt-body">
+              <div class="ttt-title">找到 ${totalNum} 位候选人</div>
+              <div class="ttt-desc">点击查看完整候选人信息表格</div>
+            </div>
+            <span class="ttt-arrow">▶ 查看</span>
+          </button>
+        </div>
+        <div class="msg-time">${formatTime()}</div>
+      `;
+      this.$messagesContainer.appendChild(row);
+      return row;
+    }
+    
+    // 普通消息处理
+    const row = document.createElement('div');
+    row.className = `msg-row ${isUser ? 'user' : 'bot'}`;
+
+    const avatarHtml = isUser
+      ? `<div class="msg-avatar user-avatar">我</div>`
+      : `<div class="msg-avatar bot-avatar">🤖</div>`;
+    const bubbleContent = isUser
+      ? `<span>${escapeHtml(content)}</span>`
+      : renderMarkdown(content);
+    const timeHtml = `<div class="msg-time">${formatTime()}</div>`;
+
+    // 为 bot 消息添加反馈按钮
+    const feedbackHtml = isUser ? '' : `
+      <div class="msg-feedback">
+        <button class="msg-feedback-btn" data-rating="1" title="回答有帮助">
+          <span>👍</span><span class="fb-label">有帮助</span>
+        </button>
+        <button class="msg-feedback-btn" data-rating="0" title="回答需改进">
+          <span>👎</span><span class="fb-label">需改进</span>
+        </button>
+      </div>`;
+
+    row.innerHTML = isUser
+      ? `${timeHtml}<div class="msg-bubble">${bubbleContent}</div>${avatarHtml}`
+      : `${avatarHtml}<div class="msg-bubble">${bubbleContent}${feedbackHtml}</div>${timeHtml}`;
+
+    this.$messagesContainer.appendChild(row);
+    // 为较长的 bot 消息添加折叠/展开功能 + 候选人链接化
+    if (!isUser) {
+      const bubble = row.querySelector('.msg-bubble');
+      if (bubble) {
+        // 延迟调用 enableBubbleCollapse，确保 DOM 完全渲染和样式计算完成
+        // 使用 requestAnimationFrame 确保浏览器完成了布局计算
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            console.log('[_appendBubble] 延迟后重新计算气泡高度...');
+            enableBubbleCollapse(bubble);
+            // 将候选人名称转换为可点击链接（SHAP 面板）
+            if (window.linkifyCandidateNames) {
+              window.linkifyCandidateNames(bubble);
+            }
+          }, 0);
+        });
+      }
+      // 绑定反馈按钮事件
+      this._bindFeedbackButtons(row);
+    }
+    return row;
+  }
+
+  _scrollToBottom(smooth = true) {
+    const el = this.$messagesContainer;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+  }
+
+  _setupScrollDetect() {
+    const el = this.$messagesContainer;
+    el.addEventListener('scroll', () => {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+      this._isAtBottom = dist < 60;
+      this.$btnScrollBot.classList.toggle('visible', !this._isAtBottom && el.scrollHeight > el.clientHeight + 100);
+    });
+    this.$btnScrollBot.addEventListener('click', () => this._scrollToBottom(true));
+  }
+
+  _autoResizeInput() {
+    this.$msgInput.addEventListener('input', () => {
+      this.$msgInput.style.height = 'auto';
+      this.$msgInput.style.height = Math.min(this.$msgInput.scrollHeight, 120) + 'px';
+    });
+  }
+
+  _autoResizeWsInput() {
+    this.$wsInput.addEventListener('input', () => {
+      this.$wsInput.style.height = 'auto';
+      this.$wsInput.style.height = Math.min(this.$wsInput.scrollHeight, 120) + 'px';
+    });
+  }
+
+  /* ── 用户反馈按钮绑定 ─────────────────────────────── */
+
+  /**
+   * 为消息行内的反馈按钮绑定点击事件
+   * @param {HTMLElement} row - 消息行 DOM 元素
+   */
+  _bindFeedbackButtons(row) {
+    const btns = row.querySelectorAll('.msg-feedback-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rating = parseInt(btn.dataset.rating, 10);
+        // 高亮当前选择，禁用所有按钮
+        btns.forEach(b => {
+          b.classList.add('disabled');
+          b.classList.remove('active-like', 'active-dislike');
+        });
+        if (rating === 1) {
+          btn.classList.add('active-like');
+          btn.classList.remove('disabled');
+        } else {
+          btn.classList.add('active-dislike');
+          btn.classList.remove('disabled');
+        }
+        // 触发全局反馈提交（由 App 层监听）
+        const event = new CustomEvent('user-feedback', {
+          detail: { rating },
+          bubbles: true,
+        });
+        row.dispatchEvent(event);
+      });
+    });
+  }
+
+  /* ── 欢迎屏幕相关 ────────────────────────────────── */
+
+  showWelcomeScreen() {
+    this.$welcomeScreen.classList.add('active');
+    this.$chatHeader.style.display = 'none';
+    this.$messagesContainer.style.display = 'none';
+    // 隐藏底部输入框
+    document.getElementById('input-area').classList.add('hidden');
+    this.$wsInput.value = '';
+    this.$wsInput.style.height = 'auto';
+    this.$wsInput.focus();
+  }
+
+  hideWelcomeScreen() {
+    this.$welcomeScreen.classList.remove('active');
+    this.$chatHeader.style.display = 'flex';
+    this.$messagesContainer.style.display = 'block';
+    // 显示底部输入框
+    document.getElementById('input-area').classList.remove('hidden');
+  }
+
+  getWelcomeScreenInput() {
+    return this.$wsInput.value.trim();
+  }
+
+  clearWelcomeScreenInput() {
+    this.$wsInput.value = '';
+    this.$wsInput.style.height = 'auto';
+  }
+
+  setWelcomeScreenInputEnabled(enabled) {
+    this.$wsInput.disabled = !enabled;
+    this.$wsSendBtn.disabled = !enabled;
+  }
+
+  /* ── 追问建议条 ─────────────────────────── */
+
+  showSuggestions(suggestions, onClickCallback) {
+    if (!suggestions || suggestions.length === 0) return;
+    this.$suggestionsBar.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'sugg-label';
+    label.textContent = '追问建议：';
+    this.$suggestionsBar.appendChild(label);
+    suggestions.forEach(text => {
+      const chip = document.createElement('button');
+      chip.className = 'sugg-chip';
+      chip.textContent = text;
+      chip.setAttribute('data-full', text);
+      chip.addEventListener('click', () => onClickCallback(text));
+      this.$suggestionsBar.appendChild(chip);
+    });
+    this.$suggestionsBar.classList.add('visible');
+  }
+
+  clearSuggestions() {
+    this.$suggestionsBar.classList.remove('visible');
+    this.$suggestionsBar.innerHTML = '';
+  }
+
+  /* ── 交互确认卡片（多 Agent 选择等） ──────────────── */
+
+  /**
+   * 在消息流末尾渲染一个交互卡片，替换 typing bubble。
+   * 用户点击选项或手动输入后，通过 onSubmit(value) 回调提交。
+   *
+   * @param {object}   interactionData  来自 SSE interaction 事件的数据
+   * @param {function} onSubmit(value)  用户确认时的回调，value 是用户选择/输入的字符串
+   */
+  showInteractionCard(interactionData, onSubmit) {
+    // 先移除 typing bubble
+    this.removeTypingBubble();
+
+    const { prompt = '', options = [], default: defaultVal = 'all' } = interactionData;
+
+    const id = `interaction-${Date.now()}`;
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.id = id;
+
+    // 将 prompt 文本渲染为 markdown，并附上选项按钮
+    const optionBtnsHtml = options.map((opt, i) =>
+      `<button class="interaction-option-btn" data-value="${i + 1}">${i + 1}. ${opt}</button>`
+    ).join('');
+    const allBtnHtml = `<button class="interaction-option-btn interaction-all-btn" data-value="all">全部执行</button>`;
+
+    row.innerHTML = `
+      <div class="msg-avatar bot-avatar">🤖</div>
+      <div class="msg-bubble interaction-bubble">
+        <div class="interaction-prompt">${renderMarkdown(prompt)}</div>
+        <div class="interaction-options">${optionBtnsHtml}${allBtnHtml}</div>
+      </div>
+    `;
+
+    this.$messagesContainer.appendChild(row);
+    this._scrollToBottom(true);
+
+    // 点击选项按钮即提交
+    row.querySelectorAll('.interaction-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.value;
+        // 禁用所有按钮，防止重复点击
+        row.querySelectorAll('.interaction-option-btn').forEach(b => b.disabled = true);
+        btn.classList.add('selected');
+        onSubmit && onSubmit(val);
+      });
+    });
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   App — 业务逻辑组装层
+────────────────────────────────────────────────────────── */
+class App {
+  constructor() {
+    // ── 登录状态检查 ──────────────────────────────────
+    this._currentUser = null;
+    const token = localStorage.getItem('hr_agent_token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    const userStr = localStorage.getItem('hr_agent_user');
+    if (userStr) {
+      try { this._currentUser = JSON.parse(userStr); } catch (_) {}
+    }
+
+    this.api   = new ApiClient(CONFIG.apiBase);
+    this.store = new ChatStore();
+    this.ui    = new ChatUI();
+
+    this._isSending = false;
+    this._bindEvents();
+    this._initUserUI();
+    this._init();
+  }
+
+  /** 初始化用户界面（显示用户名、绑定退出按钮） */
+  _initUserUI() {
+    const usernameEl = document.getElementById('sidebar-username');
+    if (usernameEl && this._currentUser) {
+      usernameEl.textContent = this._currentUser.nickname || this._currentUser.username || '用户';
+    }
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        const token = localStorage.getItem('hr_agent_token');
+        if (token) {
+          fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+          }).catch(() => {});
+        }
+        localStorage.removeItem('hr_agent_token');
+        localStorage.removeItem('hr_agent_user');
+        window.location.href = '/login';
+      });
+    }
+  }
+
+  /* ── 初始化 ─────────────────────────────────────── */
+
+  async _init() {
+    try {
+      const ok = await this.api.health();
+      if (!ok) this.ui.showToast('后端服务连接失败，请检查服务是否启动', 'error', 5000);
+    } catch (e) {
+      this.ui.showToast(`后端服务不可达: ${e.message}`, 'error', 5000);
+    }
+
+    // ── 检测直链参数 ────────────────────────────────
+    const urlParams  = new URLSearchParams(window.location.search);
+    const linkSessionId = urlParams.get('sessionId');
+    const linkMessageId = urlParams.get('messageId');
+    const linkPageNo    = parseInt(urlParams.get('pageNo')  || '1', 10);
+    const linkReqType   = parseInt(urlParams.get('reqType') || '0', 10);
+
+    // 若检测到直链参数（reqType存在 为人才推荐直链），走直链初始化流程
+    if (linkReqType && linkSessionId && linkMessageId) {
+      await this._initDirectLink(linkSessionId, linkMessageId, linkPageNo, linkReqType);
+      return;
+    }
+    // ── 正常初始化流程 ──────────────────────────────
+
+    try {
+      const sessions = await this.api.listSessions();
+      // API 返回按 updated_at DESC（最新在前），保持顺序加载
+      sessions.forEach(s => this.store.addSession(s, true));
+      this._renderSessionList();
+      // 自动进入对话：有历史会话则切到最新（第一个），否则自动创建
+      if (sessions.length > 0) {
+        await this._switchSession(sessions[0].session_id);
+      } else {
+        await this._createSession();
+      }
+    } catch (e) {
+      console.warn('加载会话列表失败:', e.message);
+      // 加载失败时也尝试自动创建一个会话
+      try { await this._createSession(); } catch (_) {}
+    }
+  }
+
+  /**
+   * 直链初始化：根据 URL 参数调用人才推荐接口，展示候选人表格
+   * @param {string} linkSessionId  - URL 中的 sessionId（人才推荐服务的 session）
+   * @param {string} linkMessageId  - URL 中的 messageId
+   * @param {number} linkPageNo     - 页码
+   * @param {number} linkReqType    - 请求类型（1=人才推荐）
+   */
+  async _initDirectLink(linkSessionId, linkMessageId, linkPageNo, linkReqType) {
+    try {
+      // 1. 加载已有会话列表（用于侧边栏展示）
+      const sessions = await this.api.listSessions();
+      sessions.forEach(s => this.store.addSession(s, true));
+      this._renderSessionList();
+
+      // 2. 查找是否已有同名 sessionId 的 HRChat 会话，没有则新建
+      let chatSession = sessions.find(s => s.session_id === linkSessionId);
+      if (!chatSession) {
+        // 创建一个新的 HR 聊天会话（使用直链 sessionId 作为标题）
+        chatSession = await this.api.createSession();
+        this.store.addSession(chatSession);
+        this._renderSessionList();
+      }
+
+      // 3. 切换到该会话（不弹欢迎屏）
+      this.store.setCurrentSession(chatSession.session_id);
+      this.ui.setActiveSession(chatSession.session_id);
+      this.ui.showChatInterface('人才推荐结果');
+      this.ui.hideWelcomeScreen();
+      this.ui.clearMessages();
+
+      // 4. 调用直链接口并展示结果
+      await this._handleDirectLink(linkSessionId, linkMessageId, linkPageNo, linkReqType, chatSession.session_id);
+
+    } catch (e) {
+      console.error('直链初始化失败:', e);
+      this.ui.showToast(`加载失败: ${e.message}`, 'error', 5000);
+      // 降级：正常初始化
+      try {
+        const sessions = await this.api.listSessions();
+        sessions.forEach(s => this.store.addSession(s, true));
+        this._renderSessionList();
+        if (this.store.sessions.length > 0) {
+          await this._switchSession(this.store.sessions[0].session_id);
+        } else {
+          await this._createSession();
+        }
+      } catch (_) {}
+    }
+  }
+
+  /**
+   * 执行直链请求：调用 /api/talent-link，展示候选人表格和摘要
+   * @param {string} linkSessionId  - 人才推荐服务 sessionId
+   * @param {string} linkMessageId  - 人才推荐服务 messageId
+   * @param {number} linkPageNo     - 页码
+   * @param {number} linkReqType    - 请求类型
+   * @param {string} chatSessionId  - 当前 HRChat 会话 ID（用于存消息）
+   */
+  async _handleDirectLink(linkSessionId, linkMessageId, linkPageNo, linkReqType, chatSessionId) {
+    // 显示 loading 状态
+    this.ui.appendTypingBubble();
+    this.ui.setInputStatus('正在获取人才推荐结果…');
+    this.ui.setInputEnabled(false);
+
+    try {
+      const res = await fetch(`${CONFIG.apiBase}/api/talent-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          sessionId: linkSessionId,
+          messageId: linkMessageId,
+          pageNo:    linkPageNo,
+          reqType:   linkReqType,
+        }),
+      });
+
+      this.ui.removeTypingBubble();
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        throw new Error(data.error || '接口返回失败');
+      }
+
+      const talentList = data.talent_table || [];
+      const numDict    = data.num_dict     || {};
+      const summary    = data.summary      || '';
+      const errors     = data.errors       || '';
+
+      // ── 展示摘要（如果有） ──────────────────────────────
+      if (summary) {
+        const summaryContent = `**📋 人才推荐摘要（第 ${linkPageNo} 页）**\n\n${summary}` +
+          (errors ? `\n\n> ⚠️ 提示：${errors}` : '');
+        this.store.addMessage(chatSessionId, { role: 'bot', content: summaryContent });
+        this.ui._appendBubble('bot', summaryContent);
+      } else if (errors) {
+        const errContent = `> ⚠️ 提示：${errors}`;
+        this.store.addMessage(chatSessionId, { role: 'bot', content: errContent });
+        this.ui._appendBubble('bot', errContent);
+      }
+
+      // ── 展示候选人表格（与 skill 展示方式完全一致） ──────
+      if (talentList.length > 0) {
+        const tableData = {
+          content:  talentList,
+          num_dict: numDict,
+        };
+        window.TalentTable.render(
+          chatSessionId,
+          tableData,
+          this.ui.$messagesContainer,
+          this.store,
+          formatTime,
+          (smooth) => this.ui._scrollToBottom(smooth),
+        );
+      } else if (!summary) {
+        // 既没有摘要也没有候选人
+        const emptyMsg = '未找到相关候选人，请检查链接参数或稍后重试。';
+        this.store.addMessage(chatSessionId, { role: 'bot', content: emptyMsg });
+        this.ui._appendBubble('bot', emptyMsg);
+      }
+
+    } catch (e) {
+      this.ui.removeTypingBubble();
+      console.error('[直链] 获取人才推荐失败:', e);
+      const errMsg = `获取人才推荐结果失败：${e.message}`;
+      this.ui.showToast(errMsg, 'error', 5000);
+      this.ui._appendBubble('bot', `❌ ${errMsg}`);
+    } finally {
+      this.ui.setInputStatus('');
+      this.ui.setInputEnabled(true);
+    }
+  }
+
+  /* ── 事件绑定 ────────────────────────────────────── */
+
+  _bindEvents() {
+    // 新建对话按钮已禁用
+    // document.getElementById('btn-new-chat').addEventListener('click',   () => this._createSession());
+    document.getElementById('btn-start-chat').addEventListener('click',   () => this._createSession());
+    document.getElementById('btn-new-session').addEventListener('click',  () => this._createSession());
+    document.getElementById('btn-send').addEventListener('click',       () => this._sendMessage());
+
+    document.getElementById('msg-input').addEventListener('keydown', e => {
+      if (e.isComposing) return;
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!this._isSending) this._sendMessage();
+      }
+    });
+
+    document.getElementById('quick-chips').addEventListener('click', e => {
+      const chip = e.target.closest('.wh-chip');
+      if (!chip) return;
+      const text = chip.dataset.text;
+      if (!text) return;
+      document.getElementById('msg-input').value = text;
+      this._sendMessage();
+    });
+
+    // 欢迎屏幕事件处理
+    document.getElementById('ws-send-btn').addEventListener('click', () => this._sendMessageFromWelcomeScreen());
+    document.getElementById('ws-input').addEventListener('keydown', e => {
+      if (e.isComposing) return;
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!this._isSending) this._sendMessageFromWelcomeScreen();
+      }
+    });
+
+    // 欢迎屏幕快捷选项
+    // 功能引导卡片示例快捷选项点击
+    document.getElementById('ws-feature-cards').addEventListener('click', e => {
+      const chip = e.target.closest('.ws-example-chip');
+      if (!chip) return;
+      const text = chip.dataset.text;
+      if (!text) return;
+      this.ui.$wsInput.value = text;
+      this.ui.$wsInput.focus();
+      // 触发自动高度调整
+      this.ui.$wsInput.dispatchEvent(new Event('input'));
+    });
+
+    // 用户反馈事件监听（点赞/点踩按钮触发）
+    document.getElementById('messages-container').addEventListener('user-feedback', (e) => {
+      const { rating } = e.detail;
+      const sessionId = this.store.currentSessionId;
+      if (!sessionId) return;
+      // 异步提交反馈到后端
+      this.api.submitFeedback(sessionId, rating).then(ok => {
+        if (ok) {
+          this.ui.showToast(rating === 1 ? '感谢您的肯定！' : '感谢反馈，我们会持续优化', 'info', 2000);
+        }
+      });
+    });
+  }
+
+  /* ── 会话操作 ────────────────────────────────────── */
+
+  async _createSession() {
+    try {
+      const meta = await this.api.createSession();
+      this.store.addSession(meta);
+      this._renderSessionList();
+      this.ui.clearSuggestions();  // 新对话：清除建议条
+      this._switchSession(meta.session_id);
+      this.ui.showToast('已创建新对话');
+    } catch (e) {
+      console.error('创建会话失败:', e);
+      // 后端不可达时，使用本地临时会话让用户至少能进入界面
+      const fallbackId = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const fallbackMeta = {
+        session_id: fallbackId,
+        title: '新对话',
+        created_at: new Date().toISOString(),
+        message_count: 0,
+      };
+      this.store.addSession(fallbackMeta);
+      this._renderSessionList();
+      this.ui.clearSuggestions();
+      this._switchSession(fallbackId);
+      this.ui.showToast('后端服务暂时不可达，已创建本地对话（发送消息时将重试连接）', 'error', 5000);
+    }
+  }
+
+  async _deleteSession(sessionId) {
+    if (!confirm('确定删除这条对话记录吗？')) return;
+    try {
+      await this.api.deleteSession(sessionId);
+      this.store.removeSession(sessionId);
+      if (this.store.currentSessionId === sessionId) {
+        this.store.setCurrentSession(null);
+        this.ui.showNoSessionHint();
+      }
+      this._renderSessionList();
+      this.ui.showToast('对话已删除');
+    } catch (e) {
+      this.ui.showToast(`删除失败: ${e.message}`, 'error');
+    }
+  }
+
+  async _switchSession(sessionId, showWelcome = true) {
+    if (this.store.currentSessionId === sessionId) return;
+    this.store.setCurrentSession(sessionId);
+    this.ui.setActiveSession(sessionId);
+
+    // 恢复/清除该会话的建议条
+    const savedSugg = this.store.getSuggestions(sessionId);
+    if (savedSugg.length > 0) {
+      this.ui.showSuggestions(savedSugg, (text) => {
+        this.ui.$msgInput.value = text;
+        this.ui.$msgInput.focus();
+        this.ui.$msgInput.dispatchEvent(new Event('input'));
+      });
+    } else {
+      this.ui.clearSuggestions();
+    }
+
+    const meta = this.store.sessions.find(s => s.session_id === sessionId);
+    this.ui.showChatInterface(meta?.title || '智能招聘匹配助手');
+    
+    // 如果是新会话且没有消息历史，显示欢迎屏幕
+    const cached = this.store.getMessages(sessionId);
+    if (showWelcome && cached.length === 0) {
+      // 检查是否有远程历史
+      try {
+        const history = await this.api.getHistory(sessionId);
+        if (history.length === 0) {
+          // 没有任何历史，显示欢迎屏幕
+          this.ui.clearMessages();
+          this.ui.showWelcomeScreen();
+          return;
+        }
+        history.forEach(m => this.store.addMessage(sessionId, m));
+        this.ui.renderHistoryMessages(history);
+        this.ui.hideWelcomeScreen();
+      } catch (e) {
+        console.warn('加载历史失败:', e.message);
+        this.ui.clearMessages();
+        this.ui.showWelcomeScreen();
+      }
+    } else {
+      this.ui.clearMessages();
+      if (cached.length > 0) {
+        this.ui.renderHistoryMessages(cached);
+      } else {
+        try {
+          const history = await this.api.getHistory(sessionId);
+          history.forEach(m => this.store.addMessage(sessionId, m));
+          this.ui.renderHistoryMessages(history);
+        } catch (e) {
+          console.warn('加载历史失败:', e.message);
+        }
+      }
+      this.ui.hideWelcomeScreen();
+    }
+  }
+
+  /* ── 消息发送 ────────────────────────────────────── */
+
+  async _sendMessageFromWelcomeScreen() {
+    if (this._isSending) return;
+
+    let content = this.ui.getWelcomeScreenInput();
+    if (!content) {
+      content = PLACEHOLDER_HINTS[placeholderManager.currentIndex];
+      // return;
+    }
+
+    if (!this.store.currentSessionId) {
+      this.ui.showToast('请先创建对话', 'error');
+      return;
+    }
+
+    // 进入聊天模式：隐藏欢迎屏幕，显示聊天界面
+    this.ui.hideWelcomeScreen();
+    this.ui.setWelcomeScreenInputEnabled(false);
+
+    this._isSending = true;
+    this.ui.setInputEnabled(false);
+    this.ui.clearWelcomeScreenInput();
+    this.ui.clearSuggestions();
+    this.ui.setInputStatus('');
+
+    const sessionId = this.store.currentSessionId;
+    this.store.setSuggestions(sessionId, []);  // 清除当前会话旧建议
+    this.store.addMessage(sessionId, { role: 'user', content });
+    this.ui.appendUserBubble(content);
+    this.ui.appendTypingBubble();
+    this.ui.setInputStatus('助手正在思考中…');
+
+    let _pendingHuoxingData = null;  // 缓存 huoxing_data，等 markdown 流完成后再渲染
+    this.api.sendMessage(sessionId, content, {
+      onThinking: (statusText) => {
+        if (statusText) this.ui.updateThinkingStatus(statusText);
+      },
+
+      onDelta: (deltaContent) => {
+        this.ui.appendDelta(deltaContent);
+        this.ui.setInputStatus('正在生成中…');
+      },
+
+      onMessage: (botContent) => {
+        if (typeof botContent === 'object' && botContent.type === 'talent_table') {
+          this.ui.removeTypingBubble();
+          window.TalentTable.render(
+            sessionId,
+            botContent.data,
+            this.ui.$messagesContainer,
+            this.store,
+            formatTime,
+            (smooth) => this.ui._scrollToBottom(smooth),
+          );
+        } else if (typeof botContent === 'object' && botContent.type === 'huoxing_data') {
+          // 先缓存，等 markdown 流式气泡结束（_stream_end）后再渲染，避免删除正在展示的 markdown
+          _pendingHuoxingData = botContent.data;
+        } else if (typeof botContent === 'object' && botContent._stream_end) {
+          // 流式结束：先完成 markdown 气泡
+          this.store.addMessage(sessionId, { role: 'bot', content: botContent.content });
+          this.ui.finalizeStreamBubble();
+          // 再渲染缓存的 huoxing_data 气泡（作为第二条消息）
+          if (_pendingHuoxingData) {
+            window.HuoxingTable.render(
+              sessionId,
+              _pendingHuoxingData,
+              this.ui.$messagesContainer,
+              this.store,
+              formatTime,
+              (smooth) => this.ui._scrollToBottom(smooth),
+            );
+            _pendingHuoxingData = null;
+          }
+        } else {
+          this.store.addMessage(sessionId, { role: 'bot', content: botContent });
+          this.ui.replaceTypingBubble(botContent);
+        }
+        this.ui.setInputStatus('');
+      },
+
+      onInteraction: (interactionData) => {
+        // Agent 需要用户选择（如多 Agent 确认），渲染交互卡片
+        this.ui.showInteractionCard(interactionData, (value) => {
+          // 用户点击选项后，以用户选择值作为下一条消息发送
+          this.ui.appendUserBubble(value);
+          this.store.addMessage(sessionId, { role: 'user', content: value });
+          this.ui.appendTypingBubble();
+          this.ui.setInputStatus('助手正在思考中…');
+          this._isSending = true;
+          this.ui.setInputEnabled(false);
+          this.ui.setWelcomeScreenInputEnabled(false);
+          let _phd = null;
+          this.api.sendMessage(sessionId, value, {
+            onThinking: (t) => { if (t) this.ui.updateThinkingStatus(t); },
+            onDelta: (d) => { this.ui.appendDelta(d); this.ui.setInputStatus('正在生成中…'); },
+            onMessage: (bc) => {
+              if (typeof bc === 'object' && bc.type === 'talent_table') {
+                this.ui.removeTypingBubble();
+                window.TalentTable.render(sessionId, bc.data, this.ui.$messagesContainer, this.store, formatTime, (s) => this.ui._scrollToBottom(s));
+              } else if (typeof bc === 'object' && bc.type === 'huoxing_data') {
+                _phd = bc.data;
+              } else if (typeof bc === 'object' && bc._stream_end) {
+                this.store.addMessage(sessionId, { role: 'bot', content: bc.content });
+                this.ui.finalizeStreamBubble();
+                if (_phd) { window.HuoxingTable.render(sessionId, _phd, this.ui.$messagesContainer, this.store, formatTime, (s) => this.ui._scrollToBottom(s)); _phd = null; }
+              } else {
+                this.store.addMessage(sessionId, { role: 'bot', content: bc });
+                this.ui.replaceTypingBubble(bc);
+              }
+              this.ui.setInputStatus('');
+            },
+            onMeta: (meta) => {
+              if (meta.title) { this.store.updateSessionMeta(sessionId, { title: meta.title }); this.ui.updateSessionTitle(sessionId, meta.title); }
+            },
+            onSuggestions: (suggestions) => {
+              this.store.setSuggestions(sessionId, suggestions);
+              this.ui.showSuggestions(suggestions, (text) => { this.ui.$msgInput.value = text; this.ui.$msgInput.focus(); this.ui.$msgInput.dispatchEvent(new Event('input')); });
+            },
+            onError: (errMsg) => { this.ui.removeTypingBubble(); this.ui.setInputStatus(''); this.ui.showToast(`处理失败: ${errMsg}`, 'error', 5000); },
+            onDone: () => { this._isSending = false; this.ui.setInputEnabled(true); this.ui.setWelcomeScreenInputEnabled(true); this.ui.setInputStatus(''); },
+          });
+        });
+        this.ui.setInputStatus('');
+      },
+
+      onMeta: (meta) => {
+        if (meta.title) {
+          this.store.updateSessionMeta(sessionId, { title: meta.title });
+          this.ui.updateSessionTitle(sessionId, meta.title);
+          this.ui.showChatInterface(meta.title);
+        }
+      },
+
+      onSuggestions: (suggestions) => {
+        this.store.setSuggestions(sessionId, suggestions);  // 存入 store
+        this.ui.showSuggestions(suggestions, (text) => {
+          this.ui.$msgInput.value = text;
+          this.ui.$msgInput.focus();
+          this.ui.$msgInput.dispatchEvent(new Event('input'));
+        });
+      },
+
+      onError: (errMsg) => {
+        this.ui.removeTypingBubble();
+        this.ui.setInputStatus('');
+        this.ui.showToast(`处理失败: ${errMsg}`, 'error', 5000);
+        console.error('[SSE] 错误:', errMsg);
+      },
+
+      onDone: () => {
+        this._isSending = false;
+        this.ui.setInputEnabled(true);
+        this.ui.setWelcomeScreenInputEnabled(true);
+        this.ui.setInputStatus('');
+      },
+    });
+  }
+
+  async _sendMessage() {
+    if (this._isSending) return;
+
+    const content = this.ui.getInputValue();
+    if (!content) return;
+
+    if (!this.store.currentSessionId) {
+      this.ui.showToast('请先创建对话', 'error');
+      return;
+    }
+
+    this._isSending = true;
+    this.ui.setInputEnabled(false);
+    this.ui.clearInput();
+    this.ui.clearSuggestions();
+    this.ui.setInputStatus('');
+
+    const sessionId = this.store.currentSessionId;
+    this.store.setSuggestions(sessionId, []);  // 清除当前会话旧建议
+    this.store.addMessage(sessionId, { role: 'user', content });
+    this.ui.appendUserBubble(content);
+    this.ui.appendTypingBubble();
+    this.ui.setInputStatus('助手正在思考中…');
+
+    let _pendingHuoxingData2 = null;  // 缓存 huoxing_data，等 markdown 流完成后再渲染
+    this.api.sendMessage(sessionId, content, {
+      onThinking: (statusText) => {
+        if (statusText) this.ui.updateThinkingStatus(statusText);
+      },
+
+      onDelta: (deltaContent) => {
+        // 流式文本片段，追加到 typing bubble
+        this.ui.appendDelta(deltaContent);
+        this.ui.setInputStatus('正在生成中…');
+      },
+
+      onMessage: (botContent) => {
+        if (typeof botContent === 'object' && botContent.type === 'talent_table') {
+          // 委托给人才表格模块渲染
+          this.ui.removeTypingBubble();
+          window.TalentTable.render(
+            sessionId,
+            botContent.data,
+            this.ui.$messagesContainer,
+            this.store,
+            formatTime,
+            (smooth) => this.ui._scrollToBottom(smooth),
+          );
+        } else if (typeof botContent === 'object' && botContent.type === 'huoxing_data') {
+          // 先缓存，等 markdown 流式气泡结束（_stream_end）后再渲染，避免删除正在展示的 markdown
+          _pendingHuoxingData2 = botContent.data;
+        } else if (typeof botContent === 'object' && botContent._stream_end) {
+          // 流式结束：先完成 markdown 气泡
+          this.store.addMessage(sessionId, { role: 'bot', content: botContent.content });
+          this.ui.finalizeStreamBubble();
+          // 再渲染缓存的 huoxing_data 气泡（作为第二条消息）
+          if (_pendingHuoxingData2) {
+            window.HuoxingTable.render(
+              sessionId,
+              _pendingHuoxingData2,
+              this.ui.$messagesContainer,
+              this.store,
+              formatTime,
+              (smooth) => this.ui._scrollToBottom(smooth),
+            );
+            _pendingHuoxingData2 = null;
+          }
+        } else {
+          this.store.addMessage(sessionId, { role: 'bot', content: botContent });
+          this.ui.replaceTypingBubble(botContent);
+        }
+        this.ui.setInputStatus('');
+      },
+
+      onInteraction: (interactionData) => {
+        // Agent 需要用户选择（如多 Agent 确认），渲染交互卡片
+        this.ui.showInteractionCard(interactionData, (value) => {
+          // 用户点击选项后，以用户选择值作为下一条消息发送
+          this.ui.appendUserBubble(value);
+          this.store.addMessage(sessionId, { role: 'user', content: value });
+          this.ui.appendTypingBubble();
+          this.ui.setInputStatus('助手正在思考中…');
+          this._isSending = true;
+          this.ui.setInputEnabled(false);
+          let _phd2 = null;
+          this.api.sendMessage(sessionId, value, {
+            onThinking: (t) => { if (t) this.ui.updateThinkingStatus(t); },
+            onDelta: (d) => { this.ui.appendDelta(d); this.ui.setInputStatus('正在生成中…'); },
+            onMessage: (bc) => {
+              if (typeof bc === 'object' && bc.type === 'talent_table') {
+                this.ui.removeTypingBubble();
+                window.TalentTable.render(sessionId, bc.data, this.ui.$messagesContainer, this.store, formatTime, (s) => this.ui._scrollToBottom(s));
+              } else if (typeof bc === 'object' && bc.type === 'huoxing_data') {
+                _phd2 = bc.data;
+              } else if (typeof bc === 'object' && bc._stream_end) {
+                this.store.addMessage(sessionId, { role: 'bot', content: bc.content });
+                this.ui.finalizeStreamBubble();
+                if (_phd2) { window.HuoxingTable.render(sessionId, _phd2, this.ui.$messagesContainer, this.store, formatTime, (s) => this.ui._scrollToBottom(s)); _phd2 = null; }
+              } else {
+                this.store.addMessage(sessionId, { role: 'bot', content: bc });
+                this.ui.replaceTypingBubble(bc);
+              }
+              this.ui.setInputStatus('');
+            },
+            onMeta: (meta) => {
+              if (meta.title) { this.store.updateSessionMeta(sessionId, { title: meta.title }); this.ui.updateSessionTitle(sessionId, meta.title); this.ui.showChatInterface(meta.title); }
+            },
+            onSuggestions: (suggestions) => {
+              this.store.setSuggestions(sessionId, suggestions);
+              this.ui.showSuggestions(suggestions, (text) => { this.ui.$msgInput.value = text; this.ui.$msgInput.focus(); this.ui.$msgInput.dispatchEvent(new Event('input')); });
+            },
+            onError: (errMsg) => { this.ui.removeTypingBubble(); this.ui.setInputStatus(''); this.ui.showToast(`处理失败: ${errMsg}`, 'error', 5000); },
+            onDone: () => { this._isSending = false; this.ui.setInputEnabled(true); this.ui.setInputStatus(''); },
+          });
+        });
+        this.ui.setInputStatus('');
+      },
+
+      onMeta: (meta) => {
+        if (meta.title) {
+          this.store.updateSessionMeta(sessionId, { title: meta.title });
+          this.ui.updateSessionTitle(sessionId, meta.title);
+          this.ui.showChatInterface(meta.title);
+        }
+      },
+
+      onSuggestions: (suggestions) => {
+        this.store.setSuggestions(sessionId, suggestions);  // 存入 store
+        this.ui.showSuggestions(suggestions, (text) => {
+          this.ui.$msgInput.value = text;
+          this.ui.$msgInput.focus();
+          this.ui.$msgInput.dispatchEvent(new Event('input'));
+        });
+      },
+
+      onError: (errMsg) => {
+        this.ui.removeTypingBubble();
+        this.ui.setInputStatus('');
+        this.ui.showToast(`处理失败: ${errMsg}`, 'error', 5000);
+        console.error('[SSE] 错误:', errMsg);
+      },
+
+      onDone: () => {
+        this._isSending = false;
+        this.ui.setInputEnabled(true);
+        this.ui.setInputStatus('');
+      },
+    });
+  }
+
+  /* ── 会话列表渲染 ────────────────────────────────── */
+
+  _renderSessionList() {
+    this.ui.renderSessionList(
+      this.store.sessions,
+      this.store.currentSessionId,
+      (id) => this._switchSession(id),
+      (id) => this._deleteSession(id),
+    );
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   Placeholder 轮换管理
+────────────────────────────────────────────────────────── */
+const PLACEHOLDER_HINTS = [
+  "找一个有5年以上后端经验的工程师",
+  "帮我推荐有机器学习背景的算法工程师",
+  "找一个985硕士毕业、有NLP经验的候选人",
+  "推荐有产品经理和数据分析双重背景的候选人"
+];
+
+class PlaceholderManager {
+  constructor(inputSelector, hints = [], interval = 6000, animationDuration = 800) {
+    this.$input = document.querySelector(inputSelector);
+    this.hints = hints;
+    this.interval = interval;
+    this.animationDuration = animationDuration;
+    this.currentIndex = 0;
+    this.timerId = null;
+  }
+
+  start() {
+    if (!this.$input || this.hints.length === 0) return;
+    
+    // 初始设置第一个提示
+    this.$input.placeholder = `你可以问我：${this.hints[0]}`;
+    
+    // 定时轮换
+    this.timerId = setInterval(() => {
+      this._switchPlaceholder();
+    }, this.interval);
+  }
+
+  _switchPlaceholder() {
+    if (!this.$input) return;
+    
+    // 触发动画
+    this.$input.classList.add('placeholder-animating');
+    
+    // 在动画中途切换文案
+    setTimeout(() => {
+      this.currentIndex = (this.currentIndex + 1) % this.hints.length;
+      this.$input.placeholder = `你可以问我：${this.hints[this.currentIndex]}`;
+    }, this.animationDuration / 2);
+    
+    // 动画结束后移除动画类
+    setTimeout(() => {
+      this.$input.classList.remove('placeholder-animating');
+    }, this.animationDuration);
+  }
+
+  stop() {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+  }
+
+  destroy() {
+    this.stop();
+  }
+}
+
+let placeholderManager = null;
+
+/* ──────────────────────────────────────────────────────────
+   启动
+────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // talent_table.js 已通过 <script src> 同步加载，TalentTable 此时已就绪
+  window.TalentTable.bindCloseEvents();
+  window._app = new App();
+  
+  // 启动 placeholder 轮换
+  placeholderManager = new PlaceholderManager('#ws-input', PLACEHOLDER_HINTS, 6000, 10000);
+  placeholderManager.start();
+
+// 💡 向后端API检查下载权限
+const downloadBtn = document.getElementById('preview-table-download');
+if (downloadBtn) {
+  // 默认隐藏下载按钮
+  downloadBtn.style.display = 'none';
+  
+  // 调用后端权限检查API
+  fetch(`${CONFIG.apiBase}/api/check-download-permission`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      // 如果用户有下载权限，显示下载按钮
+      if (data.has_download_permission) {
+        downloadBtn.style.display = '';
+      }
+    })
+    .catch(err => {
+      console.error('检查下载权限失败:', err);
+      // 权限检查失败则保持隐藏
+    });
+}
+
+/* ──────────────────────────────────────────────────────────
+   SHAP 面板交互逻辑
+────────────────────────────────────────────────────────── */
+(function initShapPanel() {
+  const shapPanel = document.getElementById('shap-panel');
+  const shapCloseBtn = document.getElementById('shap-panel-close');
+  const shapCandidateName = document.getElementById('shap-candidate-name');
+  const shapWaterfallImg = document.getElementById('shap-waterfall-img');
+  const shapLoading = document.getElementById('shap-loading');
+  const shapError = document.getElementById('shap-error');
+
+  if (!shapPanel) return;
+
+  // 关闭面板
+  shapCloseBtn.addEventListener('click', () => {
+    shapPanel.classList.add('hidden');
+  });
+
+  // Tab切换逻辑
+  const shapTabs = document.getElementById('shap-tabs');
+  if (shapTabs) {
+    shapTabs.addEventListener('click', (e) => {
+      const tab = e.target.closest('.shap-tab');
+      if (!tab) return;
+      const targetId = tab.dataset.tab;
+      // 切换tab active
+      shapTabs.querySelectorAll('.shap-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      // 切换内容
+      document.querySelectorAll('.shap-tab-content').forEach(c => c.classList.remove('active'));
+      const targetContent = document.getElementById(targetId);
+      if (targetContent) targetContent.classList.add('active');
+    });
+  }
+
+  function openShapPanel(candidateId, displayName) {
+    // 去掉前导零：后端目录名为纯整数（如 723），前端文本可能是 "0723"
+    const numericId = String(parseInt(candidateId, 10));
+    shapCandidateName.textContent = displayName;
+    shapLoading.style.display = '';
+    shapError.style.display = 'none';
+    shapWaterfallImg.classList.remove('loaded');
+    shapWaterfallImg.src = '';
+    shapPanel.classList.remove('hidden');
+
+    // 重置到SHAP tab
+    if (shapTabs) {
+      shapTabs.querySelectorAll('.shap-tab').forEach(t => t.classList.remove('active'));
+      shapTabs.querySelector('[data-tab="shap-chart-tab"]').classList.add('active');
+      document.querySelectorAll('.shap-tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('shap-chart-tab').classList.add('active');
+    }
+
+    // 先加载候选人详情（API 会按名字匹配到正确的候选人），再用真实 DB ID 加载 SHAP 图
+    loadCandidateResume(numericId, displayName);
+  }
+
+  /**
+   * 从后端获取候选人详情并渲染为简历卡片，同时用真实 DB ID 加载 SHAP 图
+   */
+  function loadCandidateResume(candidateId, displayName) {
+    const resumeLoading = document.getElementById('resume-loading');
+    const resumeContent = document.getElementById('resume-content');
+    resumeLoading.style.display = '';
+    resumeContent.style.display = 'none';
+    resumeContent.innerHTML = '';
+
+    fetch(`${CONFIG.apiBase}/api/candidate/${candidateId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('候选人不存在');
+        return res.json();
+      })
+      .then(data => {
+        resumeLoading.style.display = 'none';
+        resumeContent.style.display = '';
+        resumeContent.innerHTML = renderResumeCard(data);
+
+        // 用 API 返回的真实数据库 ID 加载 SHAP 图（解决 ID/名字不匹配问题）
+        const realDbId = data.id || candidateId;
+        const imgUrl = `${CONFIG.apiBase}/data/shap/${realDbId}/waterfall.png?t=${Date.now()}`;
+        const img = new Image();
+        img.onload = () => {
+          shapWaterfallImg.src = imgUrl;
+          shapWaterfallImg.classList.add('loaded');
+          shapLoading.style.display = 'none';
+        };
+        img.onerror = () => {
+          shapLoading.style.display = 'none';
+          shapError.style.display = '';
+          shapError.textContent = `暂无 ${displayName || data.name || '该候选人'} 的 SHAP 瀑布图`;
+        };
+        img.src = imgUrl;
+
+        // ── Layer 1: 加载全局特征重要性柱状图 ──
+        loadGlobalImportanceChart(realDbId);
+        // ── Layer 3 & 4: 加载交互解释和自然语言解释 ──
+        loadShapExplanations(realDbId);
+      })
+      .catch(err => {
+        resumeLoading.style.display = 'none';
+        resumeContent.style.display = '';
+        resumeContent.innerHTML = `<div style="color:#8f959e;text-align:center;padding:20px;">暂无简历数据</div>`;
+        shapLoading.style.display = 'none';
+        shapError.style.display = '';
+        shapError.textContent = '暂无 SHAP 瀑布图';
+      });
+  }
+
+  /**
+   * Layer 1: 加载全局特征重要性柱状图
+   */
+  function loadGlobalImportanceChart(candidateId) {
+    const globalImg = document.getElementById('shap-global-img');
+    const globalLoading = document.getElementById('shap-global-loading');
+    const globalError = document.getElementById('shap-global-error');
+
+    globalImg.classList.remove('loaded');
+    globalImg.src = '';
+    globalLoading.style.display = '';
+    globalError.style.display = 'none';
+
+    // 全局柱状图路径: data/shap/global_importance.png
+    const globalUrl = `${CONFIG.apiBase}/data/shap/global_importance.png?t=${Date.now()}`;
+    const img = new Image();
+    img.onload = () => {
+      globalImg.src = globalUrl;
+      globalImg.classList.add('loaded');
+      globalLoading.style.display = 'none';
+    };
+    img.onerror = () => {
+      globalLoading.style.display = 'none';
+      globalError.style.display = '';
+      globalError.textContent = '暂无全局特征重要性图';
+    };
+    img.src = globalUrl;
+  }
+
+  /**
+   * Layer 3 & 4: 加载特征交互解释和自然语言解释
+   */
+  function loadShapExplanations(candidateId) {
+    const interactionList = document.getElementById('shap-interaction-list');
+    const interactionLoading = document.getElementById('shap-interaction-loading');
+    const nlpText = document.getElementById('shap-nlp-text');
+    const nlpLoading = document.getElementById('shap-nlp-loading');
+
+    // 重置状态
+    interactionList.innerHTML = '';
+    interactionLoading.style.display = '';
+    nlpText.textContent = '';
+    nlpLoading.style.display = '';
+
+    fetch(`${CONFIG.apiBase}/api/shap/explain/${candidateId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('SHAP 解释数据不可用');
+        return res.json();
+      })
+      .then(data => {
+        // 渲染 Layer 3: 交互解释
+        interactionLoading.style.display = 'none';
+        const interactions = data.interaction_explanation?.top_interactions || [];
+        if (interactions.length > 0) {
+          interactionList.innerHTML = interactions.map((item, idx) => `
+            <li class="shap-interaction-item">
+              <span class="shap-interaction-badge">${idx + 1}</span>
+              <div class="shap-interaction-detail">
+                <div>
+                  <span class="shap-interaction-pair">${item.feature_1} × ${item.feature_2}</span>
+                  <span class="shap-interaction-strength">强度: ${item.interaction_strength.toFixed(4)}</span>
+                </div>
+                <div class="shap-interaction-desc">${item.description}</div>
+              </div>
+            </li>
+          `).join('');
+        } else {
+          interactionList.innerHTML = '<li style="color:#8f959e;font-size:12px;padding:8px 0;">暂无交互数据</li>';
+        }
+
+        // 渲染 Layer 4: 自然语言解释
+        nlpLoading.style.display = 'none';
+        const explanation = data.nlp_explanation?.explanation || '';
+        if (explanation) {
+          nlpText.textContent = explanation;
+        } else {
+          nlpText.textContent = '暂无自然语言解释';
+          nlpText.style.color = '#8f959e';
+        }
+      })
+      .catch(err => {
+        interactionLoading.style.display = 'none';
+        interactionList.innerHTML = '<li style="color:#ff4d4f;font-size:12px;padding:8px 0;">加载失败</li>';
+        nlpLoading.style.display = 'none';
+        nlpText.textContent = '加载失败';
+        nlpText.style.color = '#ff4d4f';
+      });
+  }
+
+  /**
+   * 将候选人数据渲染为简历HTML
+   */
+  function renderResumeCard(data) {
+    let html = '';
+    
+    // 基本信息
+    html += `<div class="resume-section">
+      <div class="resume-section-title">基本信息</div>
+      <div class="resume-basic-info">
+        <div class="resume-info-item">姓名: <span>${data.name || '-'}</span></div>
+        <div class="resume-info-item">性别: <span>${data.gender || '-'}</span></div>
+        <div class="resume-info-item">年龄: <span>${data.age || '-'}</span></div>
+        <div class="resume-info-item">现居地: <span>${data.current_city || '-'}</span></div>
+        <div class="resume-info-item">家乡: <span>${data.hometown || '-'}</span></div>
+        <div class="resume-info-item">工作年限: <span>${data.work_years || 0}年</span></div>
+        <div class="resume-info-item">最高学历: <span>${data.highest_education || '-'}</span></div>
+        <div class="resume-info-item">期望薪资: <span>${data.expected_salary ? (data.expected_salary/1000).toFixed(0)+'K' : '-'}</span></div>
+        <div class="resume-info-item">求职状态: <span>${data.job_status || '-'}</span></div>
+      </div>
+    </div>`;
+    
+    // 教育经历（时间线）
+    const eduHistory = data.education_history || [];
+    if (eduHistory.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">教育经历</div>`;
+      // 按时间倒序显示
+      const sortedEdu = [...eduHistory].reverse();
+      sortedEdu.forEach(edu => {
+        const ftTag = edu.is_fulltime ? 
+          '<span class="resume-tag fulltime">全日制</span>' : 
+          '<span class="resume-tag parttime">非全日制</span>';
+        let tierTag = '';
+        if (edu.school_tier === '985') tierTag = '<span class="resume-tag tier-985">985</span>';
+        else if (edu.school_tier === '211') tierTag = '<span class="resume-tag tier-211">211</span>';
+        else if (edu.school_tier === '双一流') tierTag = '<span class="resume-tag tier-syl">双一流</span>';
+        else if (edu.school_tier && edu.school_tier.startsWith('QS')) tierTag = `<span class="resume-tag tier-qs">${edu.school_tier}</span>`;
+        
+        html += `<div class="resume-edu-item">
+          <div class="resume-edu-school">${edu.school || '-'} ${tierTag} ${ftTag}</div>
+          <div class="resume-edu-meta">${edu.degree || ''} · ${edu.major || ''} · ${edu.start_date || ''} ~ ${edu.end_date || ''}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    
+    // 技能
+    const skills = data.skills || [];
+    if (skills.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">技能</div><div class="resume-skill-tags">`;
+      skills.forEach(s => {
+        const stars = '★'.repeat(Math.min(s.proficiency || 3, 5));
+        html += `<span class="resume-skill-tag">${s.skill_name} ${stars}</span>`;
+      });
+      html += `</div></div>`;
+    }
+    
+    // 工作经历
+    const exps = data.work_experiences || [];
+    if (exps.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">工作经历</div>`;
+      exps.forEach(exp => {
+        html += `<div class="resume-exp-item">
+          <div class="resume-exp-company">${exp.company_name || '-'}</div>
+          <div class="resume-exp-position">${exp.position || ''} ${exp.start_date ? '(' + exp.start_date + ' ~ ' + (exp.end_date || '至今') + ')' : ''}</div>
+          <div class="resume-exp-desc">${exp.description || ''}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    
+    // 项目经历
+    const projects = data.projects || [];
+    if (projects.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">项目经历</div>`;
+      projects.forEach(proj => {
+        const techs = proj.technologies || '';
+        html += `<div class="resume-exp-item">
+          <div class="resume-exp-company">${proj.project_name || '-'} <span style="font-weight:normal;color:#8f959e">(${proj.role || ''})</span></div>
+          <div class="resume-exp-position">技术栈: ${techs}</div>
+          <div class="resume-exp-desc">${proj.description || ''}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 论文发表
+    const publications = data.publications || [];
+    if (publications.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">论文发表</div>`;
+      const posMap = {first_author: '第一作者', corresponding_author: '通讯作者', co_author: '合作者'};
+      publications.forEach(pub => {
+        const sciStr = pub.sci_zone ? ` / SCI ${pub.sci_zone}` : '';
+        const rankBadge = pub.venue_rank ? `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;margin-right:6px;color:#fff;background:${pub.venue_rank==='CCF-A'?'#e74c3c':pub.venue_rank==='CCF-B'?'#e67e22':'#95a5a6'}">${pub.venue_rank}${sciStr}</span>` : '';
+        html += `<div class="resume-exp-item">
+          <div class="resume-exp-company">${rankBadge}${pub.title || '-'}</div>
+          <div class="resume-exp-position">${pub.venue || ''} (${pub.year || ''}) · ${posMap[pub.author_position] || pub.author_position || ''}</div>
+          ${pub.doi ? `<div class="resume-exp-desc" style="color:#8f959e;font-size:12px">DOI: ${pub.doi}</div>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 国际会议
+    const conferences = data.conferences || [];
+    if (conferences.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">国际会议</div>`;
+      const roleMap = {oral_presentation: '口头报告', poster: '海报展示', workshop: '研讨会', attendee: '参会者', session_chair: '分会主席', keynote: '特邀报告'};
+      conferences.forEach(conf => {
+        const rankBadge = conf.conference_rank ? `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;margin-right:6px;color:#fff;background:${conf.conference_rank==='CCF-A'?'#e74c3c':conf.conference_rank==='CCF-B'?'#e67e22':'#95a5a6'}">${conf.conference_rank}</span>` : '';
+        const paperStr = conf.paper_title ? `<div class="resume-exp-desc">论文: ${conf.paper_title}</div>` : '';
+        html += `<div class="resume-exp-item">
+          <div class="resume-exp-company">${rankBadge}${conf.conference_name || '-'} <span style="font-weight:normal;color:#8f959e">(${conf.year || ''})</span></div>
+          <div class="resume-exp-position">${conf.location || ''} · ${roleMap[conf.role] || conf.role || ''}</div>
+          ${paperStr}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 动态扩展属性（extra_attributes）
+    const extraAttrs = data.extra_attributes || {};
+    const attrLabelMap = {
+      gpa: 'GPA', hobbies: '兴趣爱好', target_job: '目标岗位',
+      ethnicity: '民族', height_cm: '身高(cm)', weight_kg: '体重(kg)',
+      marital_status: '婚姻状况', political_status: '政治面貌',
+      languages: '语言能力', certifications: '证书', self_evaluation: '自我评价'
+    };
+    const attrEntries = Object.entries(extraAttrs).filter(([k, v]) => v && v.toString().trim());
+    if (attrEntries.length > 0) {
+      html += `<div class="resume-section"><div class="resume-section-title">其他信息</div><div class="resume-basic-info">`;
+      attrEntries.forEach(([key, value]) => {
+        const label = attrLabelMap[key] || key;
+        html += `<div class="resume-info-item">${label}: <span>${value}</span></div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // 简历原始文本（可折叠展示）
+    const rawText = data.resume_raw_text || '';
+    if (rawText.trim()) {
+      html += `<div class="resume-section">
+        <div class="resume-section-title" style="cursor:pointer;user-select:none;" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+          📄 简历原文 <span style="font-size:11px;color:#8f959e;font-weight:normal">（点击展开/收起）</span>
+        </div>
+        <div class="collapsed" style="white-space:pre-wrap;font-size:12px;color:#4e5969;line-height:1.7;max-height:400px;overflow-y:auto;padding:10px;background:#fafafa;border-radius:6px;border:1px solid #f0f1f3;transition:max-height .3s ease;">
+          ${rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+        </div>
+      </div>`;
+    }
+    
+    return html;
+  }
+
+  /**
+   * 扫描容器中的 "候选人XXXX" 文本，将其转换为可点击链接。
+   * 
+   * 关键注意事项：
+   * - enableBubbleCollapse 会将内容移入 .bubble-content 子元素
+   * - markdown-it 可能将 "1. 候选人0723" 渲染为 <ol><li>，序号被列表消费
+   * - 文本可能在 <strong>、<em> 等标签内
+   */
+  function linkifyCandidateNames(container) {
+    if (!container) return;
+    // 如果容器已经有候选人链接，跳过
+    if (container.querySelector('.candidate-link')) return;
+
+    // 如果 enableBubbleCollapse 已包裹内容，在 .bubble-content 内查找
+    const target = container.querySelector('.bubble-content') || container;
+
+    // 匹配 "候选人" + 可选下划线/横线 + 3~6位数字ID（可选前面的 "数字. " 前缀）
+    // 支持格式: 候选人0723, 候选人_2285, 候选人-2285
+    const regex = /(?:(\d+)\.\s*)?(候选人)[_\-]?(\d{3,6})/g;
+    
+    // 遍历所有文本节点
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      regex.lastIndex = 0;
+      if (regex.test(node.textContent)) {
+        // 跳过已经在 candidate-link 内的文本节点
+        if (!node.parentNode.closest('.candidate-link')) {
+          textNodes.push(node);
+        }
+      }
+    }
+
+    if (textNodes.length === 0) return;
+
+    console.log(`[SHAP] linkifyCandidateNames: 找到 ${textNodes.length} 个文本节点待处理`);
+
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent;
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
+      regex.lastIndex = 0;
+
+      while ((match = regex.exec(text)) !== null) {
+        const [fullMatch, numPrefix, candidateText, candidateId] = match;
+        // 添加匹配前的普通文本
+        if (match.index > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+        // 如果有序号前缀，保留序号部分
+        if (numPrefix) {
+          fragment.appendChild(document.createTextNode(numPrefix + '. '));
+        }
+        // 创建可点击的候选人链接
+        const link = document.createElement('span');
+        link.className = 'candidate-link';
+        // 显示文本保留原始格式（从fullMatch中提取，去掉序号前缀部分）
+        const displayText = fullMatch.replace(/^\d+\.\s*/, '');
+        link.textContent = displayText;
+        link.dataset.candidateId = candidateId;
+        link.dataset.candidateName = displayText;
+        link.title = '点击查看 SHAP 可解释性分析';
+        fragment.appendChild(link);
+        lastIndex = regex.lastIndex;
+      }
+
+      // 添加剩余的文本
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+
+      textNode.parentNode.replaceChild(fragment, textNode);
+    });
+  }
+
+  // 使用事件委托处理候选人链接的点击
+  document.getElementById('messages-container').addEventListener('click', (e) => {
+    const link = e.target.closest('.candidate-link');
+    if (link) {
+      const candidateId = link.dataset.candidateId;
+      const candidateName = link.dataset.candidateName;
+      console.log(`[SHAP] 点击候选人: ${candidateName} (ID: ${candidateId})`);
+      openShapPanel(candidateId, candidateName);
+    }
+  });
+
+  // MutationObserver: 监听消息容器中 bot 消息的最终稳定状态
+  const messagesContainer = document.getElementById('messages-container');
+  if (messagesContainer) {
+    // 使用防抖：等待 DOM 稳定后再处理（避免流式渲染过程中频繁触发）
+    let debounceTimer = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        // 查找所有 bot 消息气泡，且不在流式状态中的
+        const allBotBubbles = messagesContainer.querySelectorAll(
+          '.msg-row.bot .msg-bubble:not(.streaming-bubble):not(.typing-bubble)'
+        );
+        allBotBubbles.forEach(bubble => {
+          // 只处理还没有候选人链接的气泡
+          if (!bubble.querySelector('.candidate-link')) {
+            linkifyCandidateNames(bubble);
+          }
+        });
+      }, 300);
+    });
+
+    observer.observe(messagesContainer, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  // 双击 SHAP 图片放大查看
+  shapWaterfallImg.addEventListener('dblclick', () => {
+    if (!shapWaterfallImg.src || !shapWaterfallImg.classList.contains('loaded')) return;
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    lightboxImg.src = shapWaterfallImg.src;
+    lightbox.classList.remove('hidden');
+    lightbox.focus();
+  });
+
+  // 暴露全局方法
+  window.openShapPanel = openShapPanel;
+  window.linkifyCandidateNames = linkifyCandidateNames;
+})();
+
+// 图片弹窗关闭逻辑
+(function initLightbox() {
+  const lightbox = document.getElementById('image-lightbox');
+  if (!lightbox) return;
+  const closeBtn = lightbox.querySelector('.image-lightbox-close');
+  const backdrop = lightbox.querySelector('.image-lightbox-backdrop');
+
+  function closeLightbox() { lightbox.classList.add('hidden'); }
+
+  closeBtn.addEventListener('click', closeLightbox);
+  backdrop.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+})();
+
+});
+</script>
+</body>
+</html>

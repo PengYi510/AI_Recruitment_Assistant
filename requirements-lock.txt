@@ -1,0 +1,54 @@
+# Harness-Driven Multimodal Hierarchical Fusion Intelligent Recruitment Matching System
+# 完全锁定的可复现环境 (Fully-Pinned Reproducible Environment)
+#
+# 这是论文实验与本地服务实际验证通过的精确版本组合。
+# 用于【复现实验结果】或【确保一键可跑】时使用：
+#     pip install -r requirements-lock.txt
+#
+# 验证环境: Python 3.14 (Windows)。
+# 注: 本环境因 Python 3.14 无 catboost wheel，结构化匹配自动回退 sklearn GradientBoosting；
+#     若需启用 CatBoost，请在 Python 3.13 环境追加安装 catboost==1.2.7。
+
+# ---- LLM & API ----
+openai==2.40.0
+
+# ---- Web Framework ----
+Flask==3.1.3
+fastapi==0.136.3
+uvicorn==0.48.0
+requests==2.34.2
+httpx==0.28.1
+
+# ---- Multi-Agent Orchestration ----
+langgraph==1.2.4
+
+# ---- Database / Vector Store ----
+chromadb==1.5.9
+
+# ---- Machine Learning ----
+numpy==2.4.6
+scikit-learn==1.9.0
+scipy==1.17.1
+pandas==3.0.3
+
+# ---- Retrieval ----
+rank-bm25==0.2.2
+jieba==0.42.1
+
+# ---- Embedding (BGE-M3) ----
+sentence-transformers==5.5.1
+torch==2.12.0
+
+# ---- Multimodal Image Encoding (BLIP-base) ----
+transformers==5.11.0
+torchvision==0.27.0
+safetensors==0.8.0
+pillow==12.2.0
+tokenizers==0.22.2
+
+# ---- Visualization & Explainability ----
+matplotlib==3.10.9
+shap==0.52.0
+
+# ---- Utilities ----
+pydantic==2.13.4

@@ -1,0 +1,541 @@
+{
+  "_metadata": {
+    "description": "学术论文发表场所与国际会议等级知识库 - 用于HR智能匹配中对候选人学术能力的评估",
+    "ranking_system": {
+      "journals": "按CCF推荐等级(A/B/C) + SCI分区(Q1/Q2/Q3/Q4) + 顶刊标记",
+      "conferences": "按CCF推荐等级(A/B/C) + 顶会标记",
+      "note": "CCF-A为最高等级，对应计算机领域顶级期刊/会议"
+    },
+    "venue_types": ["journal", "conference"],
+    "rank_levels": ["CCF-A", "CCF-B", "CCF-C", "SCI-Q1", "SCI-Q2", "EI", "核心期刊", "普通期刊"],
+    "conference_roles": ["oral_presentation", "poster", "workshop", "attendee", "session_chair", "keynote"],
+    "total_venues": 120
+  },
+  "journals": [
+    {
+      "name": "IEEE Transactions on Pattern Analysis and Machine Intelligence",
+      "abbr": "TPAMI",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 23.6,
+      "field": "人工智能/计算机视觉",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "Nature Machine Intelligence",
+      "abbr": "NMI",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 25.9,
+      "field": "人工智能",
+      "publisher": "Nature"
+    },
+    {
+      "name": "Journal of Machine Learning Research",
+      "abbr": "JMLR",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 6.0,
+      "field": "机器学习",
+      "publisher": "MIT Press"
+    },
+    {
+      "name": "ACM Computing Surveys",
+      "abbr": "CSUR",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 16.6,
+      "field": "计算机综合",
+      "publisher": "ACM"
+    },
+    {
+      "name": "IEEE Transactions on Knowledge and Data Engineering",
+      "abbr": "TKDE",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 8.9,
+      "field": "数据挖掘/数据库",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "ACM Transactions on Information Systems",
+      "abbr": "TOIS",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 5.6,
+      "field": "信息检索",
+      "publisher": "ACM"
+    },
+    {
+      "name": "IEEE Transactions on Neural Networks and Learning Systems",
+      "abbr": "TNNLS",
+      "rank": "CCF-B",
+      "sci_zone": "Q1",
+      "impact_factor": 10.4,
+      "field": "神经网络/深度学习",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "Information Sciences",
+      "abbr": "INS",
+      "rank": "CCF-B",
+      "sci_zone": "Q1",
+      "impact_factor": 8.1,
+      "field": "信息科学",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Knowledge-Based Systems",
+      "abbr": "KBS",
+      "rank": "CCF-C",
+      "sci_zone": "Q1",
+      "impact_factor": 8.8,
+      "field": "知识工程",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Pattern Recognition",
+      "abbr": "PR",
+      "rank": "CCF-B",
+      "sci_zone": "Q1",
+      "impact_factor": 8.0,
+      "field": "模式识别",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Neural Networks",
+      "abbr": "NN",
+      "rank": "CCF-B",
+      "sci_zone": "Q1",
+      "impact_factor": 7.8,
+      "field": "神经网络",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Expert Systems with Applications",
+      "abbr": "ESWA",
+      "rank": "CCF-C",
+      "sci_zone": "Q1",
+      "impact_factor": 8.5,
+      "field": "专家系统/应用",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "IEEE Transactions on Cybernetics",
+      "abbr": "TCYB",
+      "rank": "CCF-B",
+      "sci_zone": "Q1",
+      "impact_factor": 11.8,
+      "field": "控制论/智能系统",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "ACM Transactions on Database Systems",
+      "abbr": "TODS",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 2.9,
+      "field": "数据库",
+      "publisher": "ACM"
+    },
+    {
+      "name": "The VLDB Journal",
+      "abbr": "VLDBJ",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 4.2,
+      "field": "数据库",
+      "publisher": "Springer"
+    },
+    {
+      "name": "IEEE Transactions on Software Engineering",
+      "abbr": "TSE",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 7.4,
+      "field": "软件工程",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "Artificial Intelligence",
+      "abbr": "AIJ",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 14.4,
+      "field": "人工智能",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "IEEE Transactions on Image Processing",
+      "abbr": "TIP",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 10.6,
+      "field": "图像处理",
+      "publisher": "IEEE"
+    },
+    {
+      "name": "ACM Transactions on Graphics",
+      "abbr": "TOG",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 7.8,
+      "field": "计算机图形学",
+      "publisher": "ACM"
+    },
+    {
+      "name": "IEEE/ACM Transactions on Networking",
+      "abbr": "TON",
+      "rank": "CCF-A",
+      "sci_zone": "Q1",
+      "impact_factor": 3.7,
+      "field": "计算机网络",
+      "publisher": "IEEE/ACM"
+    },
+    {
+      "name": "Neurocomputing",
+      "abbr": "NEUCOM",
+      "rank": "CCF-C",
+      "sci_zone": "Q2",
+      "impact_factor": 6.0,
+      "field": "神经计算",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Applied Soft Computing",
+      "abbr": "ASOC",
+      "rank": "CCF-C",
+      "sci_zone": "Q1",
+      "impact_factor": 8.7,
+      "field": "软计算",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "计算机学报",
+      "abbr": "CJC",
+      "rank": "CCF-A",
+      "sci_zone": "EI",
+      "impact_factor": null,
+      "field": "计算机综合",
+      "publisher": "中国计算机学会"
+    },
+    {
+      "name": "软件学报",
+      "abbr": "JOS",
+      "rank": "CCF-A",
+      "sci_zone": "EI",
+      "impact_factor": null,
+      "field": "软件工程",
+      "publisher": "中国科学院"
+    },
+    {
+      "name": "计算机研究与发展",
+      "abbr": "JCRD",
+      "rank": "CCF-A",
+      "sci_zone": "EI",
+      "impact_factor": null,
+      "field": "计算机综合",
+      "publisher": "中国科学院"
+    },
+    {
+      "name": "自动化学报",
+      "abbr": "AAC",
+      "rank": "CCF-B",
+      "sci_zone": "EI",
+      "impact_factor": null,
+      "field": "自动化/控制",
+      "publisher": "中国自动化学会"
+    },
+    {
+      "name": "电子学报",
+      "abbr": "AES",
+      "rank": "CCF-B",
+      "sci_zone": "EI",
+      "impact_factor": null,
+      "field": "电子信息",
+      "publisher": "中国电子学会"
+    }
+  ],
+  "conferences": [
+    {
+      "name": "Neural Information Processing Systems",
+      "abbr": "NeurIPS",
+      "rank": "CCF-A",
+      "field": "机器学习/人工智能",
+      "location_pattern": ["美国", "加拿大"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Machine Learning",
+      "abbr": "ICML",
+      "rank": "CCF-A",
+      "field": "机器学习",
+      "location_pattern": ["美国", "欧洲"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Learning Representations",
+      "abbr": "ICLR",
+      "rank": "CCF-A",
+      "field": "深度学习/表示学习",
+      "location_pattern": ["美国", "欧洲", "非洲"],
+      "frequency": "年度"
+    },
+    {
+      "name": "AAAI Conference on Artificial Intelligence",
+      "abbr": "AAAI",
+      "rank": "CCF-A",
+      "field": "人工智能",
+      "location_pattern": ["美国", "加拿大"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Joint Conference on Artificial Intelligence",
+      "abbr": "IJCAI",
+      "rank": "CCF-A",
+      "field": "人工智能",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+      "abbr": "CVPR",
+      "rank": "CCF-A",
+      "field": "计算机视觉",
+      "location_pattern": ["美国"],
+      "frequency": "年度"
+    },
+    {
+      "name": "IEEE/CVF International Conference on Computer Vision",
+      "abbr": "ICCV",
+      "rank": "CCF-A",
+      "field": "计算机视觉",
+      "location_pattern": ["全球轮换"],
+      "frequency": "两年一次"
+    },
+    {
+      "name": "European Conference on Computer Vision",
+      "abbr": "ECCV",
+      "rank": "CCF-B",
+      "field": "计算机视觉",
+      "location_pattern": ["欧洲"],
+      "frequency": "两年一次"
+    },
+    {
+      "name": "ACM SIGKDD Conference on Knowledge Discovery and Data Mining",
+      "abbr": "KDD",
+      "rank": "CCF-A",
+      "field": "数据挖掘",
+      "location_pattern": ["美国", "全球"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Data Mining",
+      "abbr": "ICDM",
+      "rank": "CCF-B",
+      "field": "数据挖掘",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM International Conference on Web Search and Data Mining",
+      "abbr": "WSDM",
+      "rank": "CCF-B",
+      "field": "搜索/数据挖掘",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "The Web Conference",
+      "abbr": "WWW",
+      "rank": "CCF-A",
+      "field": "万维网/信息检索",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM SIGIR Conference on Research and Development in Information Retrieval",
+      "abbr": "SIGIR",
+      "rank": "CCF-A",
+      "field": "信息检索",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM Conference on Recommender Systems",
+      "abbr": "RecSys",
+      "rank": "CCF-B",
+      "field": "推荐系统",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "Annual Meeting of the Association for Computational Linguistics",
+      "abbr": "ACL",
+      "rank": "CCF-A",
+      "field": "自然语言处理",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "Conference on Empirical Methods in Natural Language Processing",
+      "abbr": "EMNLP",
+      "rank": "CCF-B",
+      "field": "自然语言处理",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "North American Chapter of the Association for Computational Linguistics",
+      "abbr": "NAACL",
+      "rank": "CCF-B",
+      "field": "自然语言处理",
+      "location_pattern": ["北美"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Computational Linguistics",
+      "abbr": "COLING",
+      "rank": "CCF-B",
+      "field": "计算语言学",
+      "location_pattern": ["全球轮换"],
+      "frequency": "两年一次"
+    },
+    {
+      "name": "ACM SIGMOD International Conference on Management of Data",
+      "abbr": "SIGMOD",
+      "rank": "CCF-A",
+      "field": "数据库",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Very Large Data Bases",
+      "abbr": "VLDB",
+      "rank": "CCF-A",
+      "field": "数据库",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "IEEE International Conference on Data Engineering",
+      "abbr": "ICDE",
+      "rank": "CCF-A",
+      "field": "数据工程",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Software Engineering",
+      "abbr": "ICSE",
+      "rank": "CCF-A",
+      "field": "软件工程",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM SIGCOMM Conference",
+      "abbr": "SIGCOMM",
+      "rank": "CCF-A",
+      "field": "计算机网络",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "USENIX Symposium on Operating Systems Design and Implementation",
+      "abbr": "OSDI",
+      "rank": "CCF-A",
+      "field": "操作系统",
+      "location_pattern": ["美国"],
+      "frequency": "两年一次"
+    },
+    {
+      "name": "ACM Symposium on Operating Systems Principles",
+      "abbr": "SOSP",
+      "rank": "CCF-A",
+      "field": "操作系统",
+      "location_pattern": ["全球轮换"],
+      "frequency": "两年一次"
+    },
+    {
+      "name": "International Symposium on Computer Architecture",
+      "abbr": "ISCA",
+      "rank": "CCF-A",
+      "field": "计算机体系结构",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM SIGGRAPH Conference",
+      "abbr": "SIGGRAPH",
+      "rank": "CCF-A",
+      "field": "计算机图形学",
+      "location_pattern": ["美国"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM Conference on Computer and Communications Security",
+      "abbr": "CCS",
+      "rank": "CCF-A",
+      "field": "信息安全",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "IEEE Symposium on Security and Privacy",
+      "abbr": "S&P",
+      "rank": "CCF-A",
+      "field": "信息安全",
+      "location_pattern": ["美国"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Autonomous Agents and Multi-Agent Systems",
+      "abbr": "AAMAS",
+      "rank": "CCF-B",
+      "field": "多智能体系统",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "AAAI Conference on Web and Social Media",
+      "abbr": "ICWSM",
+      "rank": "CCF-B",
+      "field": "社交媒体/网络分析",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "Pacific-Asia Conference on Knowledge Discovery and Data Mining",
+      "abbr": "PAKDD",
+      "rank": "CCF-C",
+      "field": "数据挖掘",
+      "location_pattern": ["亚太"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Database Systems for Advanced Applications",
+      "abbr": "DASFAA",
+      "rank": "CCF-B",
+      "field": "数据库",
+      "location_pattern": ["亚太"],
+      "frequency": "年度"
+    },
+    {
+      "name": "ACM International Conference on Information and Knowledge Management",
+      "abbr": "CIKM",
+      "rank": "CCF-B",
+      "field": "信息管理/知识管理",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    },
+    {
+      "name": "International Conference on Artificial Intelligence and Statistics",
+      "abbr": "AISTATS",
+      "rank": "CCF-C",
+      "field": "人工智能/统计",
+      "location_pattern": ["全球轮换"],
+      "frequency": "年度"
+    }
+  ]
+}

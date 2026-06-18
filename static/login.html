@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能招聘匹配助手 - 登录</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-primary: #1677ff;
+      --color-primary-hover: #4096ff;
+      --color-danger: #ff4d4f;
+      --color-success: #52c41a;
+      --color-bg: #f0f2f5;
+      --color-card: #ffffff;
+      --color-text: #1f2329;
+      --color-text-secondary: #8f959e;
+      --color-border: #d9d9d9;
+      --radius: 8px;
+      --shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--color-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 40px 36px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-logo {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #1677ff, #36cfc9);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .auth-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 6px;
+    }
+
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+    }
+
+    /* Tab 切换 */
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .auth-tab.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .auth-tab:hover {
+      color: var(--color-primary);
+    }
+
+    /* 表单 */
+    .auth-form {
+      display: none;
+    }
+
+    .auth-form.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      background: #fff;
+    }
+
+    .form-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+    }
+
+    .form-input::placeholder {
+      color: #bfbfbf;
+    }
+
+    .form-btn {
+      width: 100%;
+      padding: 12px 0;
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    .form-btn:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .form-btn:active {
+      transform: scale(0.98);
+    }
+
+    .form-btn:disabled {
+      background: #bfbfbf;
+      cursor: not-allowed;
+    }
+
+    /* 消息提示 */
+    .form-message {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .form-message.error {
+      display: block;
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      color: var(--color-danger);
+    }
+
+    .form-message.success {
+      display: block;
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: var(--color-success);
+    }
+
+    /* 底部提示 */
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .auth-footer a {
+      color: var(--color-primary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .auth-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .auth-card {
+        padding: 30px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-logo">🤖</div>
+        <div class="auth-title">智能招聘匹配助手</div>
+        <div class="auth-subtitle">HR Agent Intelligent Matching System</div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="login">登录</div>
+        <div class="auth-tab" data-tab="register">注册</div>
+      </div>
+
+      <!-- 登录表单 -->
+      <form class="auth-form active" id="login-form">
+        <div id="login-message" class="form-message"></div>
+        <div class="form-group">
+          <label class="form-label" for="login-username">用户名</label>
+          <input class="form-input" type="text" id="login-username" placeholder="请输入用户名" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">密码</label>
+          <input class="form-input" type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password" required />
+        </div>
+        <button class="form-btn" type="submit" id="login-btn">登 录</button>
+      </form>
+
+      <!-- 注册表单 -->
+      <form class="auth-form" id="register-form">
+        <div id="register-message" class="form-message"></div>
+        <div class="form-group">
+          <label class="form-label" for="reg-username">用户名</label>
+          <input class="form-input" type="text" id="reg-username" placeholder="2-20个字符" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-nickname">昵称（选填）</label>
+          <input class="form-input" type="text" id="reg-nickname" placeholder="显示名称，不填则使用用户名" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">密码</label>
+          <input class="form-input" type="password" id="reg-password" placeholder="4-32个字符" autocomplete="new-password" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password2">确认密码</label>
+          <input class="form-input" type="password" id="reg-password2" placeholder="再次输入密码" autocomplete="new-password" required />
+        </div>
+        <button class="form-btn" type="submit" id="register-btn">注 册</button>
+      </form>
+
+      <div class="auth-footer">
+        <span id="footer-login" style="display:none;">已有账号？<a id="link-to-login">去登录</a></span>
+        <span id="footer-register">没有账号？<a id="link-to-register">立即注册</a></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // 如果已登录，直接跳转到聊天页
+    const savedToken = localStorage.getItem('hr_agent_token');
+    if (savedToken) {
+      // 验证 token 是否有效
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + savedToken }
+      }).then(r => {
+        if (r.ok) {
+          window.location.href = '/chat';
+        } else {
+          localStorage.removeItem('hr_agent_token');
+          localStorage.removeItem('hr_agent_user');
+        }
+      }).catch(() => {});
+    }
+
+    // Tab 切换
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = document.querySelectorAll('.auth-form');
+    const footerLogin = document.getElementById('footer-login');
+    const footerRegister = document.getElementById('footer-register');
+
+    function switchTab(tabName) {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+      forms.forEach(f => f.classList.toggle('active', f.id === tabName + '-form'));
+      footerLogin.style.display = tabName === 'register' ? '' : 'none';
+      footerRegister.style.display = tabName === 'login' ? '' : 'none';
+      // 清除消息
+      document.getElementById('login-message').className = 'form-message';
+      document.getElementById('register-message').className = 'form-message';
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+    document.getElementById('link-to-register').addEventListener('click', () => switchTab('register'));
+    document.getElementById('link-to-login').addEventListener('click', () => switchTab('login'));
+
+    // 显示消息
+    function showMessage(elementId, text, type) {
+      const el = document.getElementById(elementId);
+      el.textContent = text;
+      el.className = 'form-message ' + type;
+    }
+
+    // 登录
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      if (!username || !password) {
+        showMessage('login-message', '请输入用户名和密码', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          localStorage.setItem('hr_agent_token', data.token);
+          localStorage.setItem('hr_agent_user', JSON.stringify(data.user));
+          showMessage('login-message', '登录成功，正在跳转...', 'success');
+          setTimeout(() => { window.location.href = '/chat'; }, 500);
+        } else {
+          showMessage('login-message', data.error || '登录失败', 'error');
+        }
+      } catch (err) {
+        showMessage('login-message', '网络错误，请稍后重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登 录';
+      }
+    });
+
+    // 注册
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('register-btn');
+      const username = document.getElementById('reg-username').value.trim();
+      const nickname = document.getElementById('reg-nickname').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const password2 = document.getElementById('reg-password2').value.trim();
+
+      if (!username || !password) {
+        showMessage('register-message', '请填写用户名和密码', 'error');
+        return;
+      }
+      if (password !== password2) {
+        showMessage('register-message', '两次输入的密码不一致', 'error');
+        return;
+      }
+      if (username.length < 2 || username.length > 20) {
+        showMessage('register-message', '用户名长度需在2-20个字符之间', 'error');
+        return;
+      }
+      if (password.length < 4 || password.length > 32) {
+        showMessage('register-message', '密码长度需在4-32个字符之间', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '注册中...';
+
+      try {
+        const resp = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, nickname }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          localStorage.setItem('hr_agent_token', data.token);
+          localStorage.setItem('hr_agent_user', JSON.stringify(data.user));
+          showMessage('register-message', '注册成功，正在跳转...', 'success');
+          setTimeout(() => { window.location.href = '/chat'; }, 500);
+        } else {
+          showMessage('register-message', data.error || '注册失败', 'error');
+        }
+      } catch (err) {
+        showMessage('register-message', '网络错误，请稍后重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '注 册';
+      }
+    });
+
+  })();
+  </script>
+</body>
+</html>
