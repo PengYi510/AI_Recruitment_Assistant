@@ -6,8 +6,9 @@
 
 无状态设计：
   - 每次请求按需创建 Agent，处理完即销毁（不维护全局 Agent 实例）
-  - 对话历史 + 挂起的交互状态，全部保存在 SessionStore（内存模拟 Redis）
-  - 后期切换真实 Redis 只需替换 core/session_store.py 底部的 session_store 实例
+  - 对话历史 + 挂起的交互状态，全部保存在 SessionStore（Redis + SQLite 降级）
+  - Redis 可用时使用 Redis（高性能），不可用时自动降级为 SQLite 持久化
+  - Session 默认 2 小时过期（SESSION_TTL = 7200s）
 
 交互式多轮说明：
   Agent 遇到需要用户确认时，response.interaction != null，
@@ -79,6 +80,13 @@ class InteractionInfo(BaseModel):
     default: Any = None
 
 
+class TokenUsageInfo(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    llm_calls: int = 0
+
+
 class ChatResponse(BaseModel):
     session_id: str
     message_id: str
@@ -88,6 +96,7 @@ class ChatResponse(BaseModel):
     sources: List[str] = []
     steps: List[StepInfo] = []
     interaction: Optional[InteractionInfo] = None
+    token_usage: Optional[TokenUsageInfo] = None
 
 
 # ── 核心接口 ──────────────────────────────────────────────────────────────────
@@ -158,6 +167,10 @@ def chat(req: ChatRequest) -> ChatResponse:
             ),
         )
 
+    # 构建 token 用量信息
+    tu = result.get("token_usage")
+    token_usage_info = TokenUsageInfo(**tu) if tu else None
+
     return ChatResponse(
         session_id=session_id,
         message_id=req.message_id,
@@ -166,6 +179,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         suggestions=result.get("suggestions", []),
         sources=result.get("sources", []),
         steps=steps,
+        token_usage=token_usage_info,
     )
 
 

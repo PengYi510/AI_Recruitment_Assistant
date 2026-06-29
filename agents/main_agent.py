@@ -333,10 +333,306 @@ class QueryRewriter:
             return None
 
 
+# ── 意图预分类模块 ──────────────────────────────────────────────────────────────
+
+class IntentClassifier:
+    """意图预分类器
+
+    在进入 Harness 流程之前，快速判断用户输入属于哪种类型：
+    1. chitchat  - 闲聊/打招呼/无关话题（如"你好"、"1"、"天气"）
+    2. system_query - 系统信息查询（如"简历库有多少人"、"学历分布"、"介绍一下你自己"）
+    3. recruitment - 招聘相关查询（如"帮我找Java高级工程师"、完整JD等）
+
+    分类策略：先用规则快速判断，无法确定时再调 LLM。
+    """
+
+    # 明确的招聘意图关键词
+    RECRUITMENT_KEYWORDS = [
+        "找人", "帮我找", "推荐", "搜索候选人", "匹配", "筛选",
+        "招聘", "招人", "候选人", "简历",
+        "工程师", "产品经理", "设计师", "分析师", "架构师", "运营",
+        "开发", "算法", "后端", "前端", "全栈", "测试",
+        "岗位职责", "任职要求", "岗位要求", "职位要求",
+        "工作经验", "学历要求", "薪资", "年薪",
+        "JD", "岗位描述",
+    ]
+
+    # 系统查询关键词/模式
+    SYSTEM_QUERY_PATTERNS = [
+        r"简历库.*(多少|数量|几个|统计|分布|占比|比例|概况|总览)",
+        r"(候选人|人员).*(多少|数量|几个|统计|分布|占比|比例|概况|总览)",
+        r"(学历|年龄|性别|城市|技能|院校|薪资|工作年限).*(分布|统计|占比|概况|情况)",
+        r"(有多少|共有|总共|一共).*(候选人|简历|人)",
+        r"(数据库|数据|库里).*(多少|什么|哪些|统计|概况)",
+        r"介绍一下(你自己|你|系统|这个系统)",
+        r"你是(谁|什么|哪个|做什么的)",
+        r"(系统|你)(能做什么|有什么功能|怎么用|怎么使用|有什么能力)",
+        r"帮助|help|使用说明|使用方法",
+    ]
+
+    # 明确的闲聊模式
+    CHITCHAT_PATTERNS = [
+        r"^(你好|hello|hi|hey|嗨|哈喽|嘿)\s*[!！。.]*$",
+        r"^(谢谢|thanks|thank you|感谢|多谢)\s*[!！。.]*$",
+        r"^(好的|好|ok|OK|行|嗯|明白了|了解)\s*[!！。.]*$",
+        r"^(再见|bye|拜拜|下次见)\s*[!！。.]*$",
+        r"^[0-9]+$",
+        r"^.{0,2}$",
+        r"天气|时间|几点|日期",
+        r"讲个笑话|开心|无聊",
+        r"^(测试|test)\s*[!！。.]*$",
+    ]
+
+    def classify(self, query: str, memory: "ShortTermMemory") -> str:
+        """对用户输入进行意图分类
+
+        Returns:
+            "chitchat" | "system_query" | "recruitment"
+        """
+        import re
+
+        query_stripped = query.strip()
+
+        # ── 规则1: 如果有短期记忆中的指代/续接，仍走招聘流程 ──
+        if memory.entries:
+            for pattern in QueryRewriter.REFERENCE_PATTERNS + QueryRewriter.CONTINUATION_PATTERNS:
+                if pattern in query_stripped:
+                    return "recruitment"
+
+        # ── 规则2: 明确的闲聊模式 ──
+        for pattern in self.CHITCHAT_PATTERNS:
+            if re.search(pattern, query_stripped, re.IGNORECASE):
+                return "chitchat"
+
+        # ── 规则3: 系统信息查询模式 ──
+        for pattern in self.SYSTEM_QUERY_PATTERNS:
+            if re.search(pattern, query_stripped, re.IGNORECASE):
+                return "system_query"
+
+        # ── 规则4: 包含明确招聘关键词 ──
+        for keyword in self.RECRUITMENT_KEYWORDS:
+            if keyword in query_stripped:
+                return "recruitment"
+
+        # ── 规则5: 长文本（可能是JD）→ 招聘 ──
+        if len(query_stripped) > 80:
+            return "recruitment"
+
+        # ── 规则6: 中等长度但无明确意图 → 调 LLM 判断 ──
+        return self._llm_classify(query_stripped)
+
+    def _llm_classify(self, query: str) -> str:
+        """使用 LLM 进行意图分类（兜底方案）"""
+        from backend.models.longcat_client import chat_completion
+
+        system_prompt = """你是一个意图分类器。判断用户输入属于以下哪种类型，只返回类别名称：
+
+1. chitchat - 闲聊、打招呼、无关话题、测试性输入
+2. system_query - 询问系统本身的信息（如系统功能介绍、数据库统计信息、候选人总量/分布等）
+3. recruitment - 与招聘相关的查询（搜索候选人、职位匹配、简历筛选等）
+
+只返回一个词：chitchat 或 system_query 或 recruitment"""
+
+        try:
+            response = chat_completion(system=system_prompt, user=query, temperature=0.0, max_tokens=20)
+            result = (response.content or "").strip().lower()
+            if result in ("chitchat", "system_query", "recruitment"):
+                return result
+            return "recruitment"
+        except Exception as e:
+            logger.warning(f"[IntentClassifier] LLM 分类失败: {e}, 默认走 recruitment")
+            return "recruitment"
+
+
+# ── 系统查询处理模块 ──────────────────────────────────────────────────────────────
+
+def _handle_system_query(query: str, emp_id: str) -> Dict[str, Any]:
+    """处理系统信息类查询（如"简历库有多少人"、"学历分布"、"介绍一下你自己"等）"""
+    from backend.models.longcat_client import chat_completion
+    from backend.database.models import hr_db
+
+    stats = _get_system_stats()
+
+    system_prompt = """你是「AIBP 智能人力助手」，一个专业的AI招聘匹配系统。
+
+你的核心能力：
+- 智能简历匹配：根据JD或自然语言描述，从简历库中检索和匹配最合适的候选人
+- SHAP可解释性：为每次匹配提供透明的评分解释，说明为什么推荐某位候选人
+- 多轮对话：支持上下文理解、指代消解和条件追加
+- 个性化记忆：记住用户的偏好和招聘习惯
+
+当前系统数据概况：
+""" + stats + """
+
+回答规则：
+1. 友好、专业、简洁
+2. 如果用户问数据统计相关问题，基于上面的系统数据进行回答
+3. 如果用户问"你是谁/介绍自己"等，介绍系统能力
+4. 使用 Markdown 格式，但不要过度格式化
+5. 在回复末尾可以给出一些引导性建议，帮助用户更好地使用系统"""
+
+    try:
+        response = chat_completion(system=system_prompt, user=query, temperature=0.3)
+        answer = (response.content or "").strip()
+        if answer:
+            return {
+                "answer": answer,
+                "suggestions": ["帮我找Java高级工程师", "查看学历分布", "推荐有5年经验的算法工程师"],
+            }
+    except Exception as e:
+        logger.warning(f"[SystemQuery] LLM 回答失败: {e}")
+
+    return {
+        "answer": "我是 AIBP 智能人力助手，可以帮您智能匹配候选人。试试输入岗位要求或描述您想找的人才吧！",
+        "suggestions": ["帮我找Java高级工程师", "推荐有5年经验的算法工程师"],
+    }
+
+
+def _handle_chitchat(query: str, emp_id: str) -> Dict[str, Any]:
+    """处理闲聊/无关对话，直接用 LLM 生成自然语言回复"""
+    from backend.models.longcat_client import chat_completion
+
+    system_prompt = """你是「AIBP 智能人力助手」，一个专业友好的AI招聘匹配系统。
+
+当用户进行闲聊或非招聘相关对话时，你应该：
+1. 友好地回应用户
+2. 简短自然，不要冗长
+3. 适当引导用户使用系统的核心功能（候选人搜索和匹配）
+4. 不要生硬地拒绝对话，保持自然的交流感
+
+你的核心功能是帮助HR智能匹配和搜索候选人，如果用户没有明确的招聘需求，可以友好回应后简单提示一下你能帮忙做什么。"""
+
+    try:
+        response = chat_completion(system=system_prompt, user=query, temperature=0.5, max_tokens=300)
+        answer = (response.content or "").strip()
+        if answer:
+            return {
+                "answer": answer,
+                "suggestions": ["帮我找Java高级工程师", "简历库有多少候选人", "推荐算法工程师"],
+            }
+    except Exception as e:
+        logger.warning(f"[Chitchat] LLM 回答失败: {e}")
+
+    return {
+        "answer": "你好！我是 AIBP 智能人力助手，可以帮您搜索和匹配候选人。有什么招聘需求可以告诉我～",
+        "suggestions": ["帮我找Java高级工程师", "简历库有多少候选人", "推荐算法工程师"],
+    }
+
+
+def _get_system_stats() -> str:
+    """从数据库获取系统统计概况"""
+    from backend.database.models import hr_db
+
+    try:
+        with hr_db._get_conn() as conn:
+            cursor = conn.cursor()
+
+            # 候选人总数
+            cursor.execute("SELECT COUNT(*) FROM candidates")
+            total = cursor.fetchone()[0]
+
+            # 检测学历字段名（兼容 education_level / highest_education）
+            cursor.execute("PRAGMA table_info(candidates)")
+            col_names = [row[1] for row in cursor.fetchall()]
+            edu_col = "highest_education" if "highest_education" in col_names else "education_level"
+
+            # 学历分布
+            cursor.execute(f"""
+                SELECT {edu_col}, COUNT(*) as cnt 
+                FROM candidates 
+                WHERE {edu_col} IS NOT NULL AND {edu_col} != ''
+                GROUP BY {edu_col} 
+                ORDER BY cnt DESC
+            """)
+            edu_dist = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 性别分布
+            cursor.execute("""
+                SELECT gender, COUNT(*) as cnt 
+                FROM candidates 
+                WHERE gender IS NOT NULL AND gender != ''
+                GROUP BY gender
+            """)
+            gender_dist = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 年龄分布（分段）
+            cursor.execute("""
+                SELECT 
+                    CASE 
+                        WHEN age < 25 THEN '25岁以下'
+                        WHEN age BETWEEN 25 AND 30 THEN '25-30岁'
+                        WHEN age BETWEEN 31 AND 35 THEN '31-35岁'
+                        WHEN age BETWEEN 36 AND 40 THEN '36-40岁'
+                        ELSE '40岁以上'
+                    END as age_range,
+                    COUNT(*) as cnt
+                FROM candidates
+                WHERE age IS NOT NULL
+                GROUP BY age_range
+                ORDER BY cnt DESC
+            """)
+            age_dist = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 工作年限分布
+            cursor.execute("""
+                SELECT 
+                    CASE 
+                        WHEN work_years <= 2 THEN '0-2年'
+                        WHEN work_years BETWEEN 3 AND 5 THEN '3-5年'
+                        WHEN work_years BETWEEN 6 AND 10 THEN '6-10年'
+                        ELSE '10年以上'
+                    END as exp_range,
+                    COUNT(*) as cnt
+                FROM candidates
+                WHERE work_years IS NOT NULL
+                GROUP BY exp_range
+                ORDER BY cnt DESC
+            """)
+            exp_dist = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 求职状态分布
+            cursor.execute("""
+                SELECT job_status, COUNT(*) as cnt 
+                FROM candidates 
+                WHERE job_status IS NOT NULL AND job_status != ''
+                GROUP BY job_status
+                ORDER BY cnt DESC
+            """)
+            status_dist = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 热门技能 Top 10
+            cursor.execute("""
+                SELECT skill_name, COUNT(*) as cnt 
+                FROM skills 
+                GROUP BY skill_name 
+                ORDER BY cnt DESC 
+                LIMIT 10
+            """)
+            top_skills = [(row[0], row[1]) for row in cursor.fetchall()]
+
+            # 组装统计信息
+            stats_parts = [
+                f"- 候选人总数: {total} 人",
+                f"- 学历分布: {', '.join(f'{e[0]}({e[1]}人)' for e in edu_dist)}",
+                f"- 性别分布: {', '.join(f'{g[0]}({g[1]}人)' for g in gender_dist)}",
+                f"- 年龄分布: {', '.join(f'{a[0]}({a[1]}人)' for a in age_dist)}",
+                f"- 工作经验分布: {', '.join(f'{e[0]}({e[1]}人)' for e in exp_dist)}",
+                f"- 求职状态: {', '.join(f'{s[0]}({s[1]}人)' for s in status_dist)}",
+                f"- 热门技能Top10: {', '.join(f'{s[0]}({s[1]}人)' for s in top_skills)}",
+            ]
+            return "\n".join(stats_parts)
+
+    except Exception as e:
+        logger.warning(f"[SystemStats] 获取统计信息失败: {e}")
+        return "- 系统统计信息暂时无法获取"
+
+
 # ── 主处理函数 ──────────────────────────────────────────────────────────────────
 
 # 全局查询改写器实例
 _query_rewriter = QueryRewriter()
+# 全局意图分类器实例
+_intent_classifier = IntentClassifier()
 
 
 def run_query(
@@ -372,6 +668,11 @@ def run_query(
     """
     logger.info(f"[MainAgent] session={session_id} query={query!r}")
 
+    # ── Token 用量追踪：重置计数器 ────────────────────────────────────────
+    from backend.models.longcat_client import get_token_tracker
+    _tracker = get_token_tracker()
+    _tracker.reset()
+
     # ── 0. 加载双层长期记忆 ────────────────────────────────────────────────────
     from backend.memory import memory_loader as _memory_loader
     long_term_memory_context = _memory_loader.load_memory_context(emp_id)
@@ -397,6 +698,42 @@ def run_query(
     memory_data = _extract_memory_from_history(history)
     memory = ShortTermMemory.from_dict(memory_data)
     current_turn = len(memory.entries) + 1
+
+    # ── 1.5 意图预分类（闲聊/系统查询/招聘）─────────────────────────────────────
+    # 如果有挂起交互，跳过分类直接进入续接流程
+    if not pending_interaction:
+        intent_type = _intent_classifier.classify(query, memory)
+        logger.info(f"[MainAgent] 意图预分类: {intent_type}")
+
+        if intent_type == "chitchat":
+            result = _handle_chitchat(query, emp_id)
+            history.append({"role": "user", "content": query})
+            history.append({"role": "assistant", "content": result["answer"]})
+            token_usage = _tracker.get()
+            return {
+                "answer": result["answer"],
+                "suggestions": result.get("suggestions", []),
+                "sources": [],
+                "steps": [],
+                "history": history,
+                "pending_interaction": None,
+                "token_usage": token_usage,
+            }
+
+        if intent_type == "system_query":
+            result = _handle_system_query(query, emp_id)
+            history.append({"role": "user", "content": query})
+            history.append({"role": "assistant", "content": result["answer"]})
+            token_usage = _tracker.get()
+            return {
+                "answer": result["answer"],
+                "suggestions": result.get("suggestions", []),
+                "sources": [],
+                "steps": [],
+                "history": history,
+                "pending_interaction": None,
+                "token_usage": token_usage,
+            }
 
     # ── 2. 处理挂起的交互续接 ────────────────────────────────────────────────
     if pending_interaction:
@@ -446,6 +783,12 @@ def run_query(
     # ── 6. 更新 history 并返回 ───────────────────────────────────────────────
     history = _update_history(history, query, result, memory, current_turn)
 
+    # ── 收集 Token 用量 ─────────────────────────────────────────────────
+    token_usage = _tracker.get()
+    logger.info(f"[MainAgent] Token用量: prompt={token_usage['prompt_tokens']}, "
+                f"completion={token_usage['completion_tokens']}, "
+                f"total={token_usage['total_tokens']}, calls={token_usage['llm_calls']}")
+
     return {
         "answer": result.get("answer", ""),
         "suggestions": result.get("suggestions", []),
@@ -453,6 +796,7 @@ def run_query(
         "steps": result.get("steps", []),
         "history": history,
         "pending_interaction": result.get("pending_interaction"),
+        "token_usage": token_usage,
     }
 
 

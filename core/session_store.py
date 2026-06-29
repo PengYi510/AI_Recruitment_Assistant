@@ -1,4 +1,4 @@
-"""SessionStore - Redis 实现（生产级），Redis 不可用时自动降级为内存版。
+"""SessionStore - Redis 实现（生产级），Redis 不可用时自动降级为 SQLite 持久化。
 
 使用方式：
     from core.session_store import session_store
@@ -14,8 +14,10 @@ Redis 配置（环境变量）：
     REDIS_DB        默认 0
     REDIS_PASSWORD  默认 None（无密码）
 
-如果 Redis 连接失败，系统自动降级为线程安全的内存实现（InMemorySessionStore），
-日志中会打印 WARNING 提示。上层代码无需关心底层使用的是哪种实现。
+降级策略：
+    Redis 不可用时自动降级为 SQLite 持久化实现（SQLiteSessionStore），
+    数据存储在 data/sqlite/session_store.db 中，重启后可恢复。
+    日志中会打印 WARNING 提示。上层代码无需关心底层使用的是哪种实现。
 
 Session 数据结构约定（由 http_server.py 维护）：
     {
@@ -48,8 +50,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sqlite3
 import threading
 import time
+from pathlib import Path
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -64,7 +68,7 @@ class RedisSessionStore:
     基于 Redis 的 SessionStore。
 
     所有值以 JSON 序列化后存储，支持 TTL 自动过期。
-    接口与旧版 InMemorySessionStore 完全一致，上层零改动。
+    接口与 SQLiteSessionStore 完全一致，上层零改动。
     """
 
     def __init__(
@@ -135,81 +139,209 @@ class RedisSessionStore:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  内存 Fallback 实现（Redis 不可用时自动降级）
+#  SQLite Fallback 实现（Redis 不可用时自动降级）
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class InMemorySessionStore:
+class SQLiteSessionStore:
     """
-    内存版 SessionStore（降级方案），线程安全，支持 TTL。
+    基于 SQLite 的 SessionStore（降级方案），线程安全，支持 TTL，数据持久化。
+
+    数据存储在 data/sqlite/session_store.db 中，服务重启后 session 不丢失。
+    过期条目在读取时懒清理，同时有后台线程定期清理过期数据。
     仅在 Redis 不可用时使用。
     """
 
-    def __init__(self) -> None:
-        self._data: dict[str, Any] = {}
-        self._expire_at: dict[str, float] = {}
+    _SCHEMA = """
+    CREATE TABLE IF NOT EXISTS session_kv (
+        key        TEXT PRIMARY KEY,
+        value      TEXT NOT NULL,
+        expire_at  REAL             -- NULL 表示永不过期，否则为 Unix 时间戳
+    );
+    CREATE INDEX IF NOT EXISTS idx_session_kv_expire
+        ON session_kv(expire_at)
+        WHERE expire_at IS NOT NULL;
+    """
+
+    def __init__(self, db_path: Optional[str] = None) -> None:
+        if db_path is None:
+            # 默认放在项目 data/sqlite/ 目录下
+            project_root = Path(__file__).parent.parent
+            sqlite_dir = project_root / "data" / "sqlite"
+            sqlite_dir.mkdir(parents=True, exist_ok=True)
+            db_path = str(sqlite_dir / "session_store.db")
+
+        self._db_path = db_path
         self._lock = threading.Lock()
 
+        # 初始化数据库
+        with self._connect() as conn:
+            conn.executescript(self._SCHEMA)
+
+        # 启动后台清理线程（每 5 分钟清理一次过期条目）
+        self._cleanup_thread = threading.Thread(
+            target=self._periodic_cleanup,
+            daemon=True,
+            name="session-store-cleanup",
+        )
+        self._cleanup_thread.start()
+
+        logger.info(f"[SessionStore] SQLite 持久化存储初始化成功: {db_path}")
+
+    def _connect(self) -> sqlite3.Connection:
+        """创建线程局部的 SQLite 连接。"""
+        conn = sqlite3.connect(self._db_path, timeout=10)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        return conn
+
+    # ── 核心接口 ────────────────────────────────────────────────────────────
+
     def get(self, key: str) -> Optional[Any]:
+        """读取 key 的值，不存在或已过期返回 None。"""
         with self._lock:
-            if self._is_expired(key):
-                self._evict(key)
-                return None
-            return self._data.get(key)
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT value, expire_at FROM session_kv WHERE key = ?",
+                    (key,),
+                ).fetchone()
+
+                if row is None:
+                    return None
+
+                value_str, expire_at = row
+                if expire_at is not None and time.time() > expire_at:
+                    # 惰性清理过期条目
+                    conn.execute("DELETE FROM session_kv WHERE key = ?", (key,))
+                    return None
+
+                try:
+                    return json.loads(value_str)
+                except (json.JSONDecodeError, TypeError):
+                    return value_str
 
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """
+        写入 key，可选 TTL（秒）。
+        ttl=None  → 永不过期
+        ttl=7200  → 2小时后过期
+        """
+        serialized = json.dumps(value, ensure_ascii=False)
+        expire_at = (time.time() + ttl) if ttl is not None else None
         with self._lock:
-            self._data[key] = value
-            if ttl is not None:
-                self._expire_at[key] = time.time() + ttl
-            else:
-                self._expire_at.pop(key, None)
+            with self._connect() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO session_kv (key, value, expire_at) "
+                    "VALUES (?, ?, ?)",
+                    (key, serialized, expire_at),
+                )
 
     def delete(self, key: str) -> bool:
+        """删除 key，返回是否存在。"""
         with self._lock:
-            existed = key in self._data
-            self._evict(key)
-            return existed
+            with self._connect() as conn:
+                cursor = conn.execute(
+                    "DELETE FROM session_kv WHERE key = ?", (key,)
+                )
+                return cursor.rowcount > 0
 
     def exists(self, key: str) -> bool:
+        """key 是否存在且未过期。"""
         with self._lock:
-            if self._is_expired(key):
-                self._evict(key)
-                return False
-            return key in self._data
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT expire_at FROM session_kv WHERE key = ?",
+                    (key,),
+                ).fetchone()
+                if row is None:
+                    return False
+                expire_at = row[0]
+                if expire_at is not None and time.time() > expire_at:
+                    conn.execute("DELETE FROM session_kv WHERE key = ?", (key,))
+                    return False
+                return True
 
     def expire(self, key: str, ttl: int) -> bool:
+        """为已存在的 key 设置/重置 TTL（秒）。"""
         with self._lock:
-            if key not in self._data or self._is_expired(key):
-                return False
-            self._expire_at[key] = time.time() + ttl
-            return True
+            with self._connect() as conn:
+                # 先检查 key 是否存在且未过期
+                row = conn.execute(
+                    "SELECT expire_at FROM session_kv WHERE key = ?",
+                    (key,),
+                ).fetchone()
+                if row is None:
+                    return False
+                expire_at = row[0]
+                if expire_at is not None and time.time() > expire_at:
+                    conn.execute("DELETE FROM session_kv WHERE key = ?", (key,))
+                    return False
+                # 设置新的过期时间
+                new_expire = time.time() + ttl
+                conn.execute(
+                    "UPDATE session_kv SET expire_at = ? WHERE key = ?",
+                    (new_expire, key),
+                )
+                return True
 
     def ttl(self, key: str) -> int:
+        """
+        返回剩余 TTL 秒数。
+        -2: key 不存在
+        -1: key 存在但无过期时间
+        >=0: 剩余秒数
+        """
         with self._lock:
-            if key not in self._data:
-                return -2
-            if self._is_expired(key):
-                self._evict(key)
-                return -2
-            if key not in self._expire_at:
-                return -1
-            return max(0, int(self._expire_at[key] - time.time()))
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT expire_at FROM session_kv WHERE key = ?",
+                    (key,),
+                ).fetchone()
+                if row is None:
+                    return -2
+                expire_at = row[0]
+                if expire_at is None:
+                    return -1
+                remaining = expire_at - time.time()
+                if remaining <= 0:
+                    conn.execute("DELETE FROM session_kv WHERE key = ?", (key,))
+                    return -2
+                return max(0, int(remaining))
 
-    def _is_expired(self, key: str) -> bool:
-        expire_time = self._expire_at.get(key)
-        return expire_time is not None and time.time() > expire_time
+    # ── 后台清理 ────────────────────────────────────────────────────────────
 
-    def _evict(self, key: str) -> None:
-        self._data.pop(key, None)
-        self._expire_at.pop(key, None)
+    def _periodic_cleanup(self) -> None:
+        """后台线程：每 5 分钟清理一次过期条目。"""
+        while True:
+            try:
+                time.sleep(300)  # 5 分钟
+                self._cleanup_expired()
+            except Exception:  # noqa: BLE001
+                pass  # 后台线程不应因异常退出
+
+    def _cleanup_expired(self) -> None:
+        """批量删除所有已过期的条目。"""
+        now = time.time()
+        with self._lock:
+            try:
+                with self._connect() as conn:
+                    cursor = conn.execute(
+                        "DELETE FROM session_kv WHERE expire_at IS NOT NULL AND expire_at < ?",
+                        (now,),
+                    )
+                    if cursor.rowcount > 0:
+                        logger.debug(
+                            f"[SessionStore] SQLite 清理了 {cursor.rowcount} 条过期 session"
+                        )
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"[SessionStore] SQLite 清理过期条目失败: {e}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  全局单例（自动选择 Redis 或内存降级）
+#  全局单例（自动选择 Redis 或 SQLite 降级）
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _create_session_store():
-    """尝试连接 Redis，失败则降级为内存实现。"""
+    """尝试连接 Redis，失败则降级为 SQLite 持久化实现。"""
     redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
     redis_port = int(os.environ.get("REDIS_PORT", "6379"))
     redis_db = int(os.environ.get("REDIS_DB", "0"))
@@ -226,9 +358,9 @@ def _create_session_store():
     except Exception as e:
         logger.warning(
             f"[SessionStore] Redis 连接失败 ({redis_host}:{redis_port}): {e}. "
-            f"降级为内存实现（InMemorySessionStore），数据不持久化。"
+            f"降级为 SQLite 持久化实现（SQLiteSessionStore），数据存储在本地数据库。"
         )
-        return InMemorySessionStore()
+        return SQLiteSessionStore()
 
 
 session_store = _create_session_store()

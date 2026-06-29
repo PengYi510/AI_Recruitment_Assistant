@@ -15,8 +15,8 @@ for d in [SQLITE_DIR, CHROMA_DIR, SHAP_DIR, SYNTHETIC_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ── LLM 配置（保留原有LongCat API调用方式） ──────────────────────────────────
-LLM_API_KEY = os.environ.get("AIBP_API_KEY", "your-api-key-here")
-LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1")
+LLM_API_KEY = os.environ.get("AIBP_API_KEY", "1688758691006349378")
+LLM_BASE_URL = "https://aigc.sankuai.com/v1/openai/native"
 LLM_MODEL = "LongCat-Flash-Chat"
 LLM_RATE_LIMIT_RETRIES = 3
 LLM_RATE_LIMIT_WAIT = 20

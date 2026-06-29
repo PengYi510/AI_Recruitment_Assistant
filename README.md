@@ -349,42 +349,74 @@ flowchart LR
     E -->|metadata前缀extra_| I
 ```
 
-### 模型下载（BGE-M3）
+### 模型下载与安装
 
-本项目使用北京智源研究院开源的 BAAI/bge-m3 作为文本嵌入模型，567M 参数，输出 1024 维语义向量，中英文多语言效果优秀。
+本项目需要两个预训练模型才能发挥完整的多模态匹配能力。模型文件较大不包含在 Git 仓库中，**首次使用需手动下载**。
 
-模型文件约 2.2GB，不包含在 Git 仓库中，**首次使用需手动下载**。下载后放置于项目根目录的 `models/bge-m3/` 文件夹中即可。
+> **注意**：若未下载模型，系统会对对应模态自动降级为 hash-based 确定性向量（仅用于架构验证，不具备真实语义能力）。建议至少下载 BGE-M3 以获得真实的文本语义匹配。
 
-**方式一：使用 huggingface-cli（推荐）**
+---
+
+#### 模型一：BGE-M3（文本嵌入，必选）
+
+| 属性 | 说明 |
+|------|------|
+| 模型全名 | BAAI/bge-m3 |
+| 来源机构 | 北京智源人工智能研究院（BAAI） |
+| HuggingFace 页面 | https://huggingface.co/BAAI/bge-m3 |
+| HF 镜像（国内） | https://hf-mirror.com/BAAI/bge-m3 |
+| ModelScope 页面 | https://modelscope.cn/models/BAAI/bge-m3 |
+| 参数量 | 567M |
+| 输出维度 | 1024 维 |
+| 文件大小 | ~2.2GB |
+| 安装目录 | `models/bge-m3/`（项目根目录下） |
+
+**下载方式一：huggingface-cli（推荐，支持断点续传）**
 
 ```bash
-# 安装 huggingface_hub
+# 安装 huggingface_hub 工具
 pip install huggingface_hub
+
+# 国内用户设置 HF 镜像（加速下载）
+$env:HF_ENDPOINT = "https://hf-mirror.com"   # PowerShell
+# export HF_ENDPOINT=https://hf-mirror.com   # Linux/Mac
 
 # 下载模型到 models/bge-m3/ 目录
 huggingface-cli download BAAI/bge-m3 --local-dir models/bge-m3
 ```
 
-**方式二：使用 git clone**
+**下载方式二：ModelScope（国内网络推荐）**
 
 ```bash
-# 需要先安装 git-lfs
-git lfs install
-git clone https://huggingface.co/BAAI/bge-m3 models/bge-m3
+# 安装 modelscope
+pip install modelscope
+
+# 下载模型
+modelscope download --model BAAI/bge-m3 --local_dir models/bge-m3
 ```
 
-**方式三：手动下载**
+**下载方式三：git clone**
 
-访问 HuggingFace 模型页面 https://huggingface.co/BAAI/bge-m3 ，点击 "Files and versions"，下载所有文件到 `models/bge-m3/` 目录中。
+```bash
+# 需要先安装 git-lfs（大文件支持）
+git lfs install
+git clone https://huggingface.co/BAAI/bge-m3 models/bge-m3
+# 或使用镜像
+git clone https://hf-mirror.com/BAAI/bge-m3 models/bge-m3
+```
+
+**下载方式四：手动下载**
+
+访问 HuggingFace 模型页面 https://huggingface.co/BAAI/bge-m3 （或镜像 https://hf-mirror.com/BAAI/bge-m3），点击 "Files and versions" 标签，下载所有文件到 `models/bge-m3/` 目录中。
 
 **下载完成后目录结构应为：**
 
 ```
 models/bge-m3/
-├── config.json
+├── config.json                      # 模型配置
 ├── config_sentence_transformers.json
-├── model.safetensors      # 主模型文件 (~2.2GB)
-├── tokenizer.json
+├── model.safetensors                # 主模型权重文件 (~2.2GB) ← 必须存在
+├── tokenizer.json                   # 分词器
 ├── tokenizer_config.json
 ├── modules.json
 ├── sentence_bert_config.json
@@ -392,7 +424,57 @@ models/bge-m3/
     └── config.json
 ```
 
-> 注意：若未下载 BGE-M3 文本模型或 BLIP 视觉模型，系统会对对应模态自动降级为 hash-based 确定性向量（仅用于架构验证，不具备真实语义能力）。默认配置下图像模态使用真实 BLIP-base 视觉编码器。
+**验证安装**：确认 `models/bge-m3/model.safetensors` 文件存在且大小约 2.2GB 即可。
+
+---
+
+#### 模型二：BLIP-base（图像语义编码，可选但推荐）
+
+| 属性 | 说明 |
+|------|------|
+| 模型全名 | Salesforce/blip-image-captioning-base |
+| 来源机构 | Salesforce Research |
+| HuggingFace 页面 | https://huggingface.co/Salesforce/blip-image-captioning-base |
+| HF 镜像（国内） | https://hf-mirror.com/Salesforce/blip-image-captioning-base |
+| ModelScope 页面 | https://modelscope.cn/models/Salesforce/blip-image-captioning-base |
+| 输出维度 | 768 维（hidden_size） |
+| 文件大小 | ~990MB |
+| 安装方式 | 自动缓存（首次推理时自动下载到系统缓存目录） |
+
+BLIP-base 模型**不需要手动放到项目目录中**，系统会在首次处理图像时自动从 HuggingFace（或镜像）下载到系统缓存目录：
+
+- Windows: `C:\Users\<用户名>\.cache\huggingface\hub\models--Salesforce--blip-image-captioning-base\`
+- Linux/Mac: `~/.cache/huggingface/hub/models--Salesforce--blip-image-captioning-base/`
+
+如果系统检测到 ModelScope 本地缓存（`~/.cache/modelscope/hub/models/Salesforce/blip-image-captioning-base/`）已有模型权重，会优先使用本地缓存，无需联网。
+
+**国内用户加速下载方式：**
+
+```bash
+# 方式一：提前通过 HF 镜像下载到缓存
+$env:HF_ENDPOINT = "https://hf-mirror.com"   # PowerShell
+# export HF_ENDPOINT=https://hf-mirror.com   # Linux/Mac
+python -c "from transformers import BlipForConditionalGeneration; BlipForConditionalGeneration.from_pretrained('Salesforce/blip-image-captioning-base')"
+
+# 方式二：通过 ModelScope 下载（系统会自动识别此路径）
+pip install modelscope
+modelscope download --model Salesforce/blip-image-captioning-base
+```
+
+**验证安装**：启动系统后，查看日志中出现 `[BLIP] 视觉编码器加载成功(预训练权重) hidden_size=768` 即表示模型加载正常。
+
+---
+
+#### 模型安装总结
+
+| 模型 | 是否必选 | 下载位置 | 大小 | 用途 |
+|------|----------|----------|------|------|
+| BGE-M3 | **必选** | `models/bge-m3/` | ~2.2GB | 文本语义嵌入（1024维），RAG 稠密检索 |
+| BLIP-base | 推荐 | 系统缓存（自动下载） | ~990MB | 图像语义编码（768维），证书/架构图特征 |
+
+**磁盘空间需求**：至少 4GB（BGE-M3 2.2GB + BLIP-base 1GB + 数据库约 500MB）。
+
+**内存需求**：BGE-M3 加载约需 3GB RAM；BLIP-base 加载约需 1.5GB RAM。合计建议 8GB+ 内存。
 
 ### RAG 三路召回策略
 

@@ -475,6 +475,36 @@
       align-self: flex-end;
     }
 
+    /* Token 用量标签 */
+    .token-usage-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #999;
+      background: #f5f5f5;
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 2px 8px;
+      margin: 2px 4px 4px;
+      flex-shrink: 0;
+      align-self: flex-end;
+      cursor: default;
+    }
+    .token-usage-tag .token-icon {
+      font-size: 12px;
+    }
+    .token-usage-tag .token-detail {
+      display: none;
+      color: #777;
+    }
+    .token-usage-tag:hover .token-detail {
+      display: inline;
+    }
+    .token-usage-tag:hover .token-summary {
+      display: none;
+    }
+
     /* ── 用户反馈按钮（点赞/点踩） ─────────────────── */
     .msg-feedback {
       display: flex;
@@ -2572,7 +2602,7 @@ class ApiClient {
    *   - onInteraction(data)    Agent 需要用户交互确认（多 Agent 选择等）
    */
   sendMessage(sessionId, message, callbacks = {}) {
-    const { onThinking, onDelta, onMessage, onMeta, onError, onDone, onSuggestions, onInteraction } = callbacks;
+    const { onThinking, onDelta, onMessage, onMeta, onError, onDone, onSuggestions, onInteraction, onTokenUsage } = callbacks;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), CONFIG.request_timeout_ms);
@@ -2667,6 +2697,12 @@ class ApiClient {
                 try {
                   const d = JSON.parse(dataStr);
                   onInteraction && onInteraction(d);
+                } catch (_) {}
+                break;
+              case 'token_usage':
+                try {
+                  const d = JSON.parse(dataStr);
+                  onTokenUsage && onTokenUsage(d);
                 } catch (_) {}
                 break;
               case 'done':
@@ -3216,6 +3252,33 @@ class ChatUI {
   setWelcomeScreenInputEnabled(enabled) {
     this.$wsInput.disabled = !enabled;
     this.$wsSendBtn.disabled = !enabled;
+  }
+
+  /* ── Token 用量展示 ────────────────────────── */
+
+  appendTokenUsageTag(usage) {
+    if (!usage) return;
+    const totalTokens = usage.total_tokens || 0;
+    const promptTokens = usage.prompt_tokens || 0;
+    const completionTokens = usage.completion_tokens || 0;
+    const llmCalls = usage.llm_calls || 0;
+    if (totalTokens === 0) return;
+
+    // 找到最后一条 bot 消息行
+    const rows = this.$messagesContainer.querySelectorAll('.msg-row.bot');
+    if (rows.length === 0) return;
+    const lastRow = rows[rows.length - 1];
+
+    // 避免重复添加
+    if (lastRow.querySelector('.token-usage-tag')) return;
+
+    const tag = document.createElement('div');
+    tag.className = 'token-usage-tag';
+    tag.title = `输入 ${promptTokens} tokens / 输出 ${completionTokens} tokens / 共 ${llmCalls} 次LLM调用`;
+    tag.innerHTML = `<span class="token-icon">⚡</span>`
+      + `<span class="token-summary">${totalTokens} tokens</span>`
+      + `<span class="token-detail">↑${promptTokens} ↓${completionTokens} | ${llmCalls}次调用</span>`;
+    lastRow.appendChild(tag);
   }
 
   /* ── 追问建议条 ─────────────────────────── */
@@ -3854,6 +3917,9 @@ class App {
     const content = this.ui.getInputValue();
     if (!content) return;
 
+    // 缓存用户最后一次查询，供 SHAP 面板传递给后端
+    window._lastUserQuery = content;
+
     if (!this.store.currentSessionId) {
       this.ui.showToast('请先创建对话', 'error');
       return;
@@ -3972,6 +4038,11 @@ class App {
           this.ui.updateSessionTitle(sessionId, meta.title);
           this.ui.showChatInterface(meta.title);
         }
+      },
+
+      onTokenUsage: (usage) => {
+        // 在最新的 bot 消息行下方插入 token 用量标签
+        this.ui.appendTokenUsageTag(usage);
       },
 
       onSuggestions: (suggestions) => {
@@ -4150,7 +4221,7 @@ if (downloadBtn) {
     });
   }
 
-  function openShapPanel(candidateId, displayName) {
+function openShapPanel(candidateId, displayName, matchScore) {
     // 去掉前导零：后端目录名为纯整数（如 723），前端文本可能是 "0723"
     const numericId = String(parseInt(candidateId, 10));
     shapCandidateName.textContent = displayName;
@@ -4162,20 +4233,20 @@ if (downloadBtn) {
 
     // 重置到SHAP tab
     if (shapTabs) {
-      shapTabs.querySelectorAll('.shap-tab').forEach(t => t.classList.remove('active'));
-      shapTabs.querySelector('[data-tab="shap-chart-tab"]').classList.add('active');
-      document.querySelectorAll('.shap-tab-content').forEach(c => c.classList.remove('active'));
-      document.getElementById('shap-chart-tab').classList.add('active');
+    shapTabs.querySelectorAll('.shap-tab').forEach(t => t.classList.remove('active'));
+    shapTabs.querySelector('[data-tab="shap-chart-tab"]').classList.add('active');
+    document.querySelectorAll('.shap-tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('shap-chart-tab').classList.add('active');
     }
 
     // 先加载候选人详情（API 会按名字匹配到正确的候选人），再用真实 DB ID 加载 SHAP 图
-    loadCandidateResume(numericId, displayName);
+    loadCandidateResume(numericId, displayName, matchScore);
   }
 
   /**
    * 从后端获取候选人详情并渲染为简历卡片，同时用真实 DB ID 加载 SHAP 图
    */
-  function loadCandidateResume(candidateId, displayName) {
+  function loadCandidateResume(candidateId, displayName, matchScore) {
     const resumeLoading = document.getElementById('resume-loading');
     const resumeContent = document.getElementById('resume-content');
     resumeLoading.style.display = '';
@@ -4210,8 +4281,8 @@ if (downloadBtn) {
 
         // ── Layer 1: 加载全局特征重要性柱状图 ──
         loadGlobalImportanceChart(realDbId);
-        // ── Layer 3 & 4: 加载交互解释和自然语言解释 ──
-        loadShapExplanations(realDbId);
+        // ── Layer 3 & 4: 加载交互解释和自然语言解释（传递真实匹配分和查询词）──
+        loadShapExplanations(realDbId, matchScore);
       })
       .catch(err => {
         resumeLoading.style.display = 'none';
@@ -4255,7 +4326,7 @@ if (downloadBtn) {
   /**
    * Layer 3 & 4: 加载特征交互解释和自然语言解释
    */
-  function loadShapExplanations(candidateId) {
+  function loadShapExplanations(candidateId, matchScore) {
     const interactionList = document.getElementById('shap-interaction-list');
     const interactionLoading = document.getElementById('shap-interaction-loading');
     const nlpText = document.getElementById('shap-nlp-text');
@@ -4267,7 +4338,14 @@ if (downloadBtn) {
     nlpText.textContent = '';
     nlpLoading.style.display = '';
 
-    fetch(`${CONFIG.apiBase}/api/shap/explain/${candidateId}`)
+    // 构建 URL，透传匹配分和用户查询词到后端
+    let url = `${CONFIG.apiBase}/api/shap/explain/${candidateId}`;
+    const params = new URLSearchParams();
+    if (matchScore) params.set('match_score', matchScore);
+    if (window._lastUserQuery) params.set('query', window._lastUserQuery);
+    if (params.toString()) url += '?' + params.toString();
+
+    fetch(url)
       .then(res => {
         if (!res.ok) throw new Error('SHAP 解释数据不可用');
         return res.json();
@@ -4530,6 +4608,12 @@ if (downloadBtn) {
         link.dataset.candidateId = candidateId;
         link.dataset.candidateName = displayText;
         link.title = '点击查看 SHAP 可解释性分析';
+        // 从周围文本提取匹配度百分比（格式如 "匹配度 86%" 或 "匹配度 86.5%"）
+        const surroundingText = textNode.textContent;
+        const scoreMatch = surroundingText.match(/匹配度\s*(\d+(?:\.\d+)?)\s*%/);
+        if (scoreMatch) {
+          link.dataset.matchScore = (parseFloat(scoreMatch[1]) / 100).toString();
+        }
         fragment.appendChild(link);
         lastIndex = regex.lastIndex;
       }
@@ -4549,8 +4633,9 @@ if (downloadBtn) {
     if (link) {
       const candidateId = link.dataset.candidateId;
       const candidateName = link.dataset.candidateName;
-      console.log(`[SHAP] 点击候选人: ${candidateName} (ID: ${candidateId})`);
-      openShapPanel(candidateId, candidateName);
+      const matchScore = link.dataset.matchScore || null;
+      console.log(`[SHAP] 点击候选人: ${candidateName} (ID: ${candidateId}), matchScore: ${matchScore}`);
+      openShapPanel(candidateId, candidateName, matchScore);
     }
   });
 

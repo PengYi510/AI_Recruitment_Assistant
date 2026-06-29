@@ -139,7 +139,12 @@ class SessionStore:
             logger.error(f"从数据库恢复会话失败: {e}", exc_info=True)
 
     def create_session(self, user_id: Optional[str] = None) -> dict:
-        """创建新会话，返回会话元信息"""
+        """创建新会话，返回会话元信息。
+
+        采用延迟持久化策略：仅在内存中创建元信息，不立即写入数据库。
+        只有当第一条消息到来时（通过 _ensure_persisted）才真正持久化，
+        避免用户创建新对话但未发送任何消息时在数据库中残留空会话。
+        """
         session_id = str(uuid.uuid4())[:8]
         with self._lock:
             meta = {
@@ -150,11 +155,11 @@ class SessionStore:
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat(),
                 "message_count": 0,
+                "_persisted": False,  # 标记：尚未写入数据库
             }
             self._meta[session_id] = meta
-            # 保存到数据库，实现持久化
-            session_db.save_session(meta)
-        logger.info(f"创建新会话: {session_id} (user={user_id})")
+            # 不再立即调用 session_db.save_session(meta)，延迟到首条消息时
+        logger.info(f"创建新会话(延迟持久化): {session_id} (user={user_id})")
         return meta
 
     def get_meta(self, session_id: str) -> Optional[dict]:
@@ -187,9 +192,11 @@ class SessionStore:
                 meta = session_db.get_session(session_id)
                 if meta is None:
                     return False
+            was_persisted = meta.get("_persisted", True)  # 从DB恢复的默认为已持久化
             self._meta.pop(session_id, None)
-            session_db.delete_session(session_id)
-        logger.info(f"删除会话: {session_id}")
+            if was_persisted:
+                session_db.delete_session(session_id)
+        logger.info(f"删除会话: {session_id} (was_persisted={was_persisted})")
         return True
 
     def update_session_title(self, session_id: str, title: str):
@@ -200,9 +207,19 @@ class SessionStore:
                 self._meta[session_id]["updated_at"] = datetime.now().isoformat()
                 session_db.update_session_title(session_id, title)
 
+    def _ensure_persisted(self, session_id: str):
+        """确保会话已持久化到数据库（首次消息时调用）"""
+        meta = self._meta.get(session_id)
+        if meta and not meta.get("_persisted", True):
+            session_db.save_session(meta)
+            meta["_persisted"] = True
+            logger.info(f"会话 {session_id} 首次收到消息，已持久化到数据库")
+
     def increment_message_count(self, session_id: str):
         """递增消息计数并更新时间戳"""
         with self._lock:
+            # 首条消息到来：延迟持久化会话元信息
+            self._ensure_persisted(session_id)
             if session_id in self._meta:
                 self._meta[session_id]["message_count"] += 1
                 self._meta[session_id]["updated_at"] = datetime.now().isoformat()
@@ -406,7 +423,8 @@ def _generate_global_importance():
         logger.error(f"[SHAP] 全局特征重要性图生成失败: {e}")
 
 
-def _generate_shap_for_candidate(candidate_id: int):
+def _generate_shap_for_candidate(candidate_id: int, match_score: float = None,
+                                  query: str = ''):
     """为指定候选人动态生成 SHAP 瀑布图（当图不存在时的 fallback）"""
     import asyncio
     try:
@@ -427,14 +445,22 @@ def _generate_shap_for_candidate(candidate_id: int):
             np.random.seed(candidate_id)
             features_list = np.random.rand(12).tolist()
 
+        # 如果没有传入真实 match_score，使用 CatBoost 预测
+        if match_score is None:
+            catboost_score = catboost_matcher.predict(np.array(features_list))
+            match_score = round(catboost_score, 4)
+
+        if not query:
+            query = '综合匹配评估'
+
         loop = asyncio.new_event_loop()
         try:
             loop.run_until_complete(skill.execute({
                 'candidate_id': candidate_id,
                 'features': features_list,
-                'match_score': 0.7,
+                'match_score': match_score,
                 'level': 'individual',
-                'query': '综合匹配评估',
+                'query': query,
             }))
         finally:
             loop.close()
@@ -446,6 +472,10 @@ def _generate_shap_for_candidate(candidate_id: int):
 @app.route("/api/shap/explain/<int:candidate_id>", methods=["GET"])
 def get_shap_explanation(candidate_id: int):
     """获取候选人的 SHAP 四层解释数据（交互解释 + 自然语言解释）
+
+    支持 URL 查询参数（前端可透传当前匹配上下文）：
+      ?match_score=0.86&query=帮我找个会机器学习的工程师
+    不传时使用候选人结构化特征自动计算分数。
 
     返回 JSON:
     {
@@ -470,14 +500,34 @@ def get_shap_explanation(candidate_id: int):
             np.random.seed(candidate_id)
             features_list = np.random.rand(12).tolist()
 
+        # 从 URL 查询参数读取真实匹配分和用户 query
+        req_match_score = request.args.get('match_score', None)
+        req_query = request.args.get('query', '')
+
+        if req_match_score is not None:
+            try:
+                match_score = float(req_match_score)
+            except (ValueError, TypeError):
+                match_score = None
+        else:
+            match_score = None
+
+        # 如果前端没传 match_score，则使用 CatBoost 预测自动计算
+        if match_score is None:
+            catboost_score = catboost_matcher.predict(np.array(features_list))
+            match_score = round(catboost_score, 4)
+
+        if not req_query:
+            req_query = '综合匹配评估'
+
         loop = asyncio.new_event_loop()
         try:
             result = loop.run_until_complete(skill.execute({
                 'candidate_id': candidate_id,
                 'features': features_list,
-                'match_score': 0.7,
+                'match_score': match_score,
                 'level': 'all',
-                'query': '综合匹配评估',
+                'query': req_query,
             }))
         finally:
             loop.close()
@@ -908,6 +958,7 @@ def chat():
         answer = data.get("answer", "")
         suggestions = data.get("suggestions", [])
         interaction = data.get("interaction")
+        token_usage = data.get("token_usage")
 
         # 3. 将用户消息和 AI 回复持久化到数据库
         session_db.save_messages(session_id, "user", user_message)
@@ -944,7 +995,11 @@ def chat():
             "message_count": meta_info.get("message_count", 0) if meta_info else 0,
         })
 
-        # 7. 推送追问建议（有才推送）
+        # 7. 推送 Token 用量（有才推送）
+        if token_usage:
+            yield sse_event("token_usage", token_usage)
+
+        # 8. 推送追问建议（有才推送）
         if suggestions:
             yield sse_suggestions(suggestions)
 

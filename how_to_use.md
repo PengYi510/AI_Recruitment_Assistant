@@ -17,8 +17,9 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/PengYi510/AI_Recruitment_Assistant.git
-cd AI_Recruitment_Assistant
+git clone ssh://git@git.sankuai.com/~pengyi14/hr_agent_mt.git
+cd hr_agent_mt
+git checkout pengyi14_3
 ```
 
 ### 2. 创建虚拟环境
@@ -37,23 +38,126 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3.5 下载 BGE-M3 嵌入模型（首次必须执行）
+### 3.5 下载预训练模型（首次必须执行）
 
-本项目使用北京智源研究院开源的 BAAI/bge-m3 模型（567M参数，1024维，~2.2GB）。模型文件太大不包含在 Git 仓库中，需自行下载到 `models/bge-m3/` 目录。
+本项目需要两个预训练模型实现完整的多模态匹配能力。模型文件较大不包含在 Git 仓库中，需自行下载。
+
+> **注意**：若未下载模型，系统会对对应模态自动降级为 hash-based 确定性向量（仅用于架构验证，不具备真实语义能力）。建议至少下载 BGE-M3。
+
+---
+
+#### 模型一：BGE-M3（文本嵌入，必选）
+
+- **模型全名**：BAAI/bge-m3
+- **来源**：北京智源人工智能研究院（BAAI）
+- **下载页面**：
+  - HuggingFace：https://huggingface.co/BAAI/bge-m3
+  - HF 镜像（国内推荐）：https://hf-mirror.com/BAAI/bge-m3
+  - ModelScope（国内推荐）：https://modelscope.cn/models/BAAI/bge-m3
+- **参数量**：567M，输出 1024 维语义向量
+- **文件大小**：~2.2GB
+- **安装目录**：项目根目录下的 `models/bge-m3/`
+
+**下载方法（任选其一）：**
 
 ```bash
-# 方式一：huggingface-cli（推荐）
+# ========== 方法一：huggingface-cli（推荐，支持断点续传）==========
 pip install huggingface_hub
+
+# 国内用户先设置镜像加速（重要！否则可能下载超时）
+# PowerShell:
+$env:HF_ENDPOINT = "https://hf-mirror.com"
+# Linux/Mac:
+# export HF_ENDPOINT=https://hf-mirror.com
+
+# 执行下载
 huggingface-cli download BAAI/bge-m3 --local-dir models/bge-m3
 
-# 方式二：git clone
+# ========== 方法二：ModelScope（国内网络最稳定）==========
+pip install modelscope
+modelscope download --model BAAI/bge-m3 --local_dir models/bge-m3
+
+# ========== 方法三：git clone ==========
 git lfs install
-git clone https://huggingface.co/BAAI/bge-m3 models/bge-m3
+git clone https://hf-mirror.com/BAAI/bge-m3 models/bge-m3
+
+# ========== 方法四：手动下载 ==========
+# 浏览器打开 https://hf-mirror.com/BAAI/bge-m3
+# 点击 "Files and versions" 标签
+# 下载所有文件到 models/bge-m3/ 目录（特别是 model.safetensors）
 ```
 
-下载完成后确认 `models/bge-m3/model.safetensors` 文件存在即可。
+**验证**：确认 `models/bge-m3/model.safetensors` 文件存在且大小约 2.2GB。
 
-> 注：若未下载 BGE-M3 文本模型或 BLIP 视觉模型，系统会对对应模态自动降级为 hash-based 确定性向量（仅用于架构验证，不具备真实语义能力）。默认配置下图像模态使用真实 BLIP-base 视觉编码器。
+下载完成后目录结构：
+
+```
+models/bge-m3/
+├── config.json                      # 模型配置
+├── config_sentence_transformers.json
+├── model.safetensors                # ← 主模型权重（~2.2GB，必须存在）
+├── tokenizer.json                   # 分词器
+├── tokenizer_config.json
+├── modules.json
+├── sentence_bert_config.json
+└── 1_Pooling/
+    └── config.json
+```
+
+---
+
+#### 模型二：BLIP-base（图像语义编码，可选但推荐）
+
+- **模型全名**：Salesforce/blip-image-captioning-base
+- **来源**：Salesforce Research
+- **下载页面**：
+  - HuggingFace：https://huggingface.co/Salesforce/blip-image-captioning-base
+  - HF 镜像（国内推荐）：https://hf-mirror.com/Salesforce/blip-image-captioning-base
+  - ModelScope：https://modelscope.cn/models/Salesforce/blip-image-captioning-base
+- **输出维度**：768 维（hidden_size）
+- **文件大小**：~990MB
+- **安装方式**：**无需手动放置到项目目录**，系统首次处理图像时自动下载到系统缓存
+
+**自动下载机制说明**：
+
+系统在首次调用图像编码时自动从 HuggingFace 下载模型到系统缓存目录：
+- Windows: `C:\Users\<用户名>\.cache\huggingface\hub\models--Salesforce--blip-image-captioning-base\`
+- Linux/Mac: `~/.cache/huggingface/hub/models--Salesforce--blip-image-captioning-base/`
+
+代码中已内置 `HF_ENDPOINT=https://hf-mirror.com` 镜像设置，国内用户通常无需额外配置。
+
+**如果自动下载失败（网络问题），可手动预下载：**
+
+```bash
+# 方法一：设置镜像后用 Python 预拉取（推荐）
+# PowerShell:
+$env:HF_ENDPOINT = "https://hf-mirror.com"
+# Linux/Mac:
+# export HF_ENDPOINT=https://hf-mirror.com
+
+python -c "from transformers import BlipForConditionalGeneration, AutoProcessor; BlipForConditionalGeneration.from_pretrained('Salesforce/blip-image-captioning-base'); AutoProcessor.from_pretrained('Salesforce/blip-image-captioning-base'); print('BLIP-base 下载成功!')"
+
+# 方法二：通过 ModelScope 下载（系统会自动识别此路径）
+pip install modelscope
+modelscope download --model Salesforce/blip-image-captioning-base
+# 模型将被缓存到 ~/.cache/modelscope/hub/models/Salesforce/blip-image-captioning-base/
+```
+
+**验证**：启动系统后，查看日志中出现以下信息即表示加载成功：
+```
+[BLIP] 视觉编码器加载成功(预训练权重) hidden_size=768
+```
+
+---
+
+#### 模型安装总结
+
+| 模型 | 必要性 | 安装位置 | 大小 | 作用 |
+|------|--------|----------|------|------|
+| BGE-M3 | **必选** | `models/bge-m3/`（手动下载） | ~2.2GB | 文本语义嵌入，RAG 稠密检索 |
+| BLIP-base | 推荐 | 系统缓存（自动下载） | ~990MB | 图像语义编码，证书/架构图特征提取 |
+
+**硬件需求**：磁盘 ≥4GB，内存 ≥8GB（BGE-M3 加载约 3GB + BLIP-base 约 1.5GB）。无需 GPU。
 
 ### 4. 初始化数据库（首次运行必须执行）
 
@@ -71,7 +175,7 @@ python -m data.scripts.init_database
 
 ```bash
 export LLM_API_KEY="your-longcat-api-key"
-export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_BASE_URL="https://aigc.sankuai.com/v1/openai/native/v1"
 export LLM_MODEL="ep-20250305164825-hxfln"
 ```
 

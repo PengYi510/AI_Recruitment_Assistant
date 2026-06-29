@@ -83,22 +83,28 @@ class RAGRetrievalSkill(BaseSkill):
         else:
             search_query = query
 
-        # Step 0.5: 从查询中提取硬约束（使用原始完整query以提取更多信息）
+        # Step 0.5: 从查询中提取硬约束和软约束（使用原始完整query以提取更多信息）
         constraints = self._extract_constraints(query)
+        soft_constraints = constraints.pop("_soft_constraints", {})
         logger.info(f"[RAG] 硬约束提取: {constraints}")
+        if soft_constraints:
+            logger.info(f"[RAG] 软约束提取: {soft_constraints}")
 
         # Step 1: 如果有硬约束，先做SQL预过滤获取满足条件的候选人ID集合
+        # 注意：软约束不参与 SQL 预过滤，仅参与后续评分加权
         # constraint_ids: None=无约束, 非空Set=有匹配, 空Set=有约束但无人满足
-        constraint_ids = self._sql_prefilter(constraints) if constraints else None
+        hard_constraints_only = {k: v for k, v in constraints.items() if not k.startswith("_")}
+        constraint_ids = self._sql_prefilter(constraints) if hard_constraints_only else None
 
         # Step 1.5: 硬约束交集为空 → 直接返回空结果（不再退化为全量检索）
-        if constraints and constraint_ids is not None and len(constraint_ids) == 0:
+        if hard_constraints_only and constraint_ids is not None and len(constraint_ids) == 0:
             logger.warning(f"[RAG] 所有硬约束交集为空，无候选人满足全部条件: {constraints}")
             return {
                 "candidates": [],
                 "total_found": 0,
                 "retrieval_method": "bm25+dense_fusion",
                 "constraints_detected": constraints,
+                "soft_constraints_detected": soft_constraints,
                 "constraint_matched_count": 0,
                 "no_match_reason": "数据库中没有同时满足所有硬约束条件的候选人",
             }
@@ -132,8 +138,13 @@ class RAGRetrievalSkill(BaseSkill):
                             "data": self._data_cache[cid]
                         })
 
-        # Step 4: 加权融合 + 硬约束优先
-        fused_results = self._fuse_results(bm25_results, dense_results, top_k * 2, constraint_ids)
+        # Step 4: 加权融合 + 硬约束优先 + 软约束加分
+        soft_constraint_ids = None
+        if soft_constraints:
+            soft_constraint_ids = self._sql_prefilter_soft(soft_constraints)
+            logger.info(f"[RAG] 软约束匹配: {len(soft_constraint_ids) if soft_constraint_ids else 0}人满足偏好条件")
+        fused_results = self._fuse_results(bm25_results, dense_results, top_k * 2,
+                                           constraint_ids, soft_constraint_ids)
 
         # Step 5: 最终截断
         final_results = fused_results[:top_k]
@@ -143,6 +154,7 @@ class RAGRetrievalSkill(BaseSkill):
             "total_found": len(final_results),
             "retrieval_method": "bm25+dense_fusion",
             "constraints_detected": constraints,
+            "soft_constraints_detected": soft_constraints,
             "constraint_matched_count": len(constraint_ids) if constraint_ids else 0,
         }
 
@@ -238,9 +250,9 @@ class RAGRetrievalSkill(BaseSkill):
     # LLM 约束提取的 System Prompt（模板部分，运行时会注入动态 attr_key 列表）
     _LLM_CONSTRAINT_SYSTEM_PROMPT_TEMPLATE = """你是一个招聘查询约束提取器。从用户的自然语言查询中提取所有筛选条件。
 
-你必须返回一个严格的 JSON 对象，包含以下两部分：
+你必须返回一个严格的 JSON 对象，包含以下三部分：
 
-1. "standard_constraints": 标准结构化约束（对应数据库固定字段），可能包含：
+1. "standard_constraints": 硬性约束（用户明确要求、必须满足的条件），可能包含：
    - "school": 具体学校名（如"华中科技大学"）
    - "school_tier": 院校层级（"985"/"211"/"双一流"）
    - "overseas_rank": 海外排名上限数字（如 50 表示 QS前50）
@@ -280,13 +292,21 @@ class RAGRetrievalSkill(BaseSkill):
    - "==": 精确等于
    - "contains": 包含（字符串模糊匹配）
 
+3. "soft_constraints": 软性偏好约束（用户表达为"优先/偏好/最好/尽量/加分项"的条件，不是硬性要求）。
+   格式与 standard_constraints 相同，但这些条件不应作为过滤条件，而是作为加分项。
+   典型的软性表述词：优先、偏好、最好、尽量、加分项、优先考虑、倾向于、更好。
+
 重要规则：
 - 只提取用户明确表达的约束，不要推测或添加用户未提及的条件
 - 如果某个字段用户没有提及，就不要包含在结果中
 - 数值类型的值用数字表示，不要用字符串
-- 如果查询中没有任何约束，返回空的 standard_constraints 和 extra_constraints
+- 如果查询中没有任何约束，返回空的 standard_constraints、extra_constraints 和 soft_constraints
 - 注意区分"目标岗位"（target_job，候选人期望的岗位）和查询中的岗位描述（用于技能匹配）
 - extra_constraints 的 key 必须严格使用数据库中实际存在的 key 名（见上方列表）
+- 【关键】区分硬性要求与软性偏好：
+  - "要求985" / "必须985" / "985院校" → standard_constraints（硬性）
+  - "优先985" / "985优先" / "最好是985" / "偏好985" → soft_constraints（软性）
+  - "有xx经验加分" / "优先考虑有xx的" → soft_constraints（软性）
 
 示例输入："帮我找一个华中科技大学毕业的前端开发，会React和Node.js，8年左右经验，目标岗位DevOps工程师，GPA 3以上的"
 示例输出：
@@ -299,7 +319,8 @@ class RAGRetrievalSkill(BaseSkill):
   "extra_constraints": {{
     "gpa": {{"operator": ">=", "value": 3.0}},
     "target_job": {{"operator": "contains", "value": "DevOps"}}
-  }}
+  }},
+  "soft_constraints": {{}}
 }}
 
 示例输入："找一个应届生，要求身高160以上，女性"
@@ -311,6 +332,20 @@ class RAGRetrievalSkill(BaseSkill):
   }},
   "extra_constraints": {{
     "height_cm": {{"operator": ">=", "value": 160}}
+  }},
+  "soft_constraints": {{}}
+}}
+
+示例输入："帮我找商业分析实习生，优先985/211院校，最好有数据分析经验"
+示例输出：
+{{
+  "standard_constraints": {{
+    "is_intern": true
+  }},
+  "extra_constraints": {{}},
+  "soft_constraints": {{
+    "school_tier": "985",
+    "required_skills": ["数据分析"]
   }}
 }}"""
 
@@ -330,8 +365,9 @@ class RAGRetrievalSkill(BaseSkill):
         
         返回格式：
         {
-            "standard_constraints": {...},  # 标准字段约束
+            "standard_constraints": {...},  # 硬性标准字段约束
             "extra_constraints": {...},     # 动态扩展属性约束
+            "soft_constraints": {...},      # 软性偏好约束（优先/最好等）
         }
         
         失败时返回空字典，由调用方 fallback 到正则提取。
@@ -346,15 +382,20 @@ class RAGRetrievalSkill(BaseSkill):
             
             standard = result.get("standard_constraints", {})
             extra = result.get("extra_constraints", {})
+            soft = result.get("soft_constraints", {})
             
             # 基本校验：确保返回的是字典
             if not isinstance(standard, dict):
                 standard = {}
             if not isinstance(extra, dict):
                 extra = {}
+            if not isinstance(soft, dict):
+                soft = {}
             
-            logger.info(f"[RAG] LLM约束提取成功: standard={list(standard.keys())}, extra={list(extra.keys())}")
-            return {"standard_constraints": standard, "extra_constraints": extra}
+            logger.info(f"[RAG] LLM约束提取成功: standard={list(standard.keys())}, "
+                        f"extra={list(extra.keys())}, soft={list(soft.keys())}")
+            return {"standard_constraints": standard, "extra_constraints": extra,
+                    "soft_constraints": soft}
             
         except Exception as e:
             logger.warning(f"[RAG] LLM约束提取失败({type(e).__name__}: {e})，将fallback到正则提取")
@@ -365,20 +406,33 @@ class RAGRetrievalSkill(BaseSkill):
     # ══════════════════════════════════════════════════════════════════════════
 
     def _extract_constraints(self, query: str) -> Dict[str, Any]:
-        """从自然语言查询中提取硬约束条件（LLM优先 + 正则兜底）
+        """从自然语言查询中提取硬约束和软约束（LLM优先 + 正则兜底）
         
         策略：
         1. 先调用 LLM 提取约束（能识别任意新属性如 GPA、target_job 等）
         2. 同时用正则提取作为兜底（保证 LLM 不可用时系统仍可工作）
         3. 合并两者结果：LLM 结果优先，正则结果补充
+        4. 正则兜底：对含"优先/偏好/最好/尽量"修饰的约束，移入软约束
+        
+        返回字典中：
+        - 普通 key（如 school_tier, min_work_years）= 硬约束
+        - "_soft_constraints" key = 软约束字典（不参与 SQL 过滤，仅用于评分加权）
+        - "_extra_constraints" key = 动态扩展属性约束
         """
         # ── Phase 1: LLM 动态提取 ──
         llm_result = self._llm_extract_constraints(query)
         llm_standard = llm_result.get("standard_constraints", {})
         llm_extra = llm_result.get("extra_constraints", {})
+        llm_soft = llm_result.get("soft_constraints", {})
         
         # ── Phase 2: 正则兜底提取（原有逻辑） ──
         constraints = self._regex_extract_constraints(query)
+        
+        # ── Phase 2.5: 正则层面的软约束检测 ──
+        # 如果 LLM 没有返回 soft_constraints，用正则检测"优先/偏好/最好"修饰的约束
+        soft_keys_from_regex = set()
+        if not llm_soft:
+            soft_keys_from_regex = self._detect_soft_constraint_keys(query, constraints)
         
         # ── Phase 3: 合并策略 ──
         # LLM 提取的标准约束覆盖正则结果（LLM 更准确）
@@ -413,6 +467,30 @@ class RAGRetrievalSkill(BaseSkill):
                         )
             if filtered_extra:
                 constraints["_extra_constraints"] = filtered_extra
+
+        # ── Phase 4: 构建软约束字典 ──
+        soft_constraints = {}
+        
+        # 4a. 从 LLM 的 soft_constraints 合并
+        if llm_soft:
+            for key, value in llm_soft.items():
+                if value is not None and value != "" and value != []:
+                    soft_constraints[key] = value
+        
+        # 4b. 从正则检测到的软约束 key 中，将对应约束从硬约束移到软约束
+        for sk in soft_keys_from_regex:
+            if sk in constraints and sk not in ("_extra_constraints", "_soft_constraints"):
+                soft_constraints[sk] = constraints.pop(sk)
+        
+        # 4c. 如果 LLM 返回了 soft_constraints，确保这些 key 不在硬约束中
+        if llm_soft:
+            for key in llm_soft:
+                if key in constraints and key not in ("_extra_constraints", "_soft_constraints"):
+                    constraints.pop(key)
+        
+        if soft_constraints:
+            constraints["_soft_constraints"] = soft_constraints
+            logger.info(f"[RAG] 软约束识别: {list(soft_constraints.keys())}")
             
         return constraints
 
@@ -686,6 +764,62 @@ class RAGRetrievalSkill(BaseSkill):
 
         return constraints
 
+    @staticmethod
+    def _detect_soft_constraint_keys(query: str, constraints: Dict[str, Any]) -> Set[str]:
+        """正则检测哪些已提取的约束实际上是软性偏好（优先/最好/尽量等）。
+        
+        返回应被标记为软约束的 key 集合。
+        
+        策略：在查询文本中搜索"优先xxx"、"最好xxx"等模式，
+        如果模式中提及了某个约束的值，则该约束为软约束。
+        """
+        soft_keys = set()
+        
+        # 软性修饰词正则
+        soft_pattern = r'(?:优先|偏好|最好|尽量|加分|倾向|更好|优先考虑|首选)\s*(?:是)?'
+        
+        # 检测 school_tier 软约束（如 "优先985/211"）
+        if "school_tier" in constraints:
+            if re.search(soft_pattern + r'.*?(?:985|211|双一流)', query):
+                soft_keys.add("school_tier")
+            elif re.search(r'(?:985|211|双一流)\s*(?:优先|加分|更好)', query):
+                soft_keys.add("school_tier")
+        
+        # 检测 school 软约束
+        if "school" in constraints:
+            school = constraints["school"]
+            if re.search(soft_pattern + r'.*?' + re.escape(school), query):
+                soft_keys.add("school")
+            elif re.search(re.escape(school) + r'\s*(?:优先|加分|更好)', query):
+                soft_keys.add("school")
+        
+        # 检测 highest_education 软约束
+        if "highest_education" in constraints:
+            if re.search(soft_pattern + r'.*?(?:本科|硕士|博士|研究生)', query):
+                soft_keys.add("highest_education")
+        
+        # 检测 required_skills 软约束（如 "最好有xx经验"）
+        if "required_skills" in constraints:
+            if re.search(soft_pattern + r'.*?(?:经验|技能|能力|掌握)', query):
+                soft_keys.add("required_skills")
+            elif re.search(r'(?:经验|技能|能力).{0,4}(?:优先|加分)', query):
+                soft_keys.add("required_skills")
+        
+        # 检测 has_publications 软约束
+        if "has_publications" in constraints:
+            if re.search(soft_pattern + r'.*?(?:论文|发表|发过)', query):
+                soft_keys.add("has_publications")
+        
+        # 检测 min_work_years 软约束
+        if "min_work_years" in constraints:
+            if re.search(soft_pattern + r'.*?\d+\s*年', query):
+                soft_keys.add("min_work_years")
+        
+        if soft_keys:
+            logger.info(f"[RAG] 正则检测到软约束 keys: {soft_keys}")
+        
+        return soft_keys
+
     def _sql_prefilter(self, constraints: Dict[str, Any]) -> Set[int]:
         """基于硬约束在SQL层预过滤候选人，返回满足所有约束的ID集合"""
         candidate_ids = None
@@ -955,6 +1089,80 @@ class RAGRetrievalSkill(BaseSkill):
         # - 空 set(): 有硬约束但没有候选人满足交集
         return candidate_ids
 
+    def _sql_prefilter_soft(self, soft_constraints: Dict[str, Any]) -> Optional[Set[int]]:
+        """基于软约束查询匹配的候选人 ID 集合（用于评分加权，不做过滤）。
+        
+        与 _sql_prefilter 的区别：
+        - 多个软约束之间用 OR（并集）而非 AND（交集）
+        - 结果仅用于 _fuse_results 中的评分加分，不用于过滤
+        """
+        all_soft_ids = set()
+        
+        # 院校层级软约束
+        if "school_tier" in soft_constraints:
+            tier = soft_constraints["school_tier"]
+            with hr_db._get_conn() as conn:
+                if tier == "985":
+                    tier_condition = "school_tier = '985'"
+                elif tier == "211":
+                    tier_condition = "school_tier IN ('985', '211')"
+                else:
+                    tier_condition = "school_tier IN ('985', '211', '双一流')"
+                rows = conn.execute(
+                    f"SELECT DISTINCT candidate_id FROM education_history WHERE {tier_condition}"
+                ).fetchall()
+                tier_ids = {r[0] for r in rows}
+                logger.info(f"[RAG] 软约束-院校层级({tier}): {len(tier_ids)}人匹配")
+                all_soft_ids |= tier_ids
+        
+        # 学校软约束
+        if "school" in soft_constraints:
+            school = soft_constraints["school"]
+            with hr_db._get_conn() as conn:
+                rows = conn.execute(
+                    "SELECT DISTINCT candidate_id FROM education_history WHERE school LIKE ?",
+                    (f"%{school}%",)
+                ).fetchall()
+                all_soft_ids |= {r[0] for r in rows}
+        
+        # 学历软约束
+        if "highest_education" in soft_constraints:
+            edu = soft_constraints["highest_education"]
+            edu_hierarchy = {"本科": ["本科", "硕士", "博士"], "硕士": ["硕士", "博士"], "博士": ["博士"]}
+            valid_edus = edu_hierarchy.get(edu, [edu])
+            placeholders = ",".join(["?" for _ in valid_edus])
+            with hr_db._get_conn() as conn:
+                try:
+                    rows = conn.execute(
+                        f"SELECT id FROM candidates WHERE highest_education IN ({placeholders})",
+                        valid_edus
+                    ).fetchall()
+                except Exception:
+                    rows = conn.execute(
+                        f"SELECT id FROM candidates WHERE education_level IN ({placeholders})",
+                        valid_edus
+                    ).fetchall()
+                all_soft_ids |= {r[0] for r in rows}
+        
+        # 工作年限软约束
+        if "min_work_years" in soft_constraints:
+            min_years = soft_constraints["min_work_years"]
+            with hr_db._get_conn() as conn:
+                rows = conn.execute(
+                    "SELECT id FROM candidates WHERE work_years >= ?", (min_years,)
+                ).fetchall()
+                all_soft_ids |= {r[0] for r in rows}
+        
+        # 论文软约束
+        if soft_constraints.get("has_publications"):
+            with hr_db._get_conn() as conn:
+                rows = conn.execute(
+                    "SELECT DISTINCT candidate_id FROM publications"
+                ).fetchall()
+                all_soft_ids |= {r[0] for r in rows}
+        
+        return all_soft_ids if all_soft_ids else None
+
     def _filter_by_extra_attributes(self, extra_constraints: Dict[str, Any]) -> Optional[Set[int]]:
         """通用动态属性过滤引擎
         
@@ -1182,14 +1390,19 @@ class RAGRetrievalSkill(BaseSkill):
     # ══════════════════════════════════════════════════════════════════════════
 
     def _fuse_results(self, bm25: List, dense: List, top_k: int,
-                      constraint_ids: Optional[Set[int]] = None) -> List[Dict[str, Any]]:
-        """加权融合两路结果 + 硬约束优先策略
+                      constraint_ids: Optional[Set[int]] = None,
+                      soft_constraint_ids: Optional[Set[int]] = None) -> List[Dict[str, Any]]:
+        """加权融合两路结果 + 硬约束优先策略 + 软约束加分
         
         当检测到硬约束时：
         - 将满足硬约束的候选人优先排序在前
         - 在硬约束候选人内部按 BM25+Dense 融合分排序
         - 硬约束候选人后面再接非硬约束候选人
         这确保了"精确匹配的人一定排在模糊匹配的人前面"
+        
+        当检测到软约束时：
+        - 满足软约束的候选人获得额外加分（SOFT_BOOST=0.15）
+        - 不做过滤，仅影响排序
         """
         # 对两路分数分别做 min-max 归一化到 [0, 1]
         bm25_scores = [item["score"] for item in bm25] if bm25 else [0]
@@ -1231,15 +1444,23 @@ class RAGRetrievalSkill(BaseSkill):
         matched_items = []
         unmatched_items = []
         
+        SOFT_BOOST = 0.15  # 软约束加分系数
+
         for cid, scores in score_map.items():
             base_score = RAG_BM25_WEIGHT * scores["bm25"] + RAG_DENSE_WEIGHT * scores["dense"]
             is_match = bool(constraint_ids and cid in constraint_ids)
+            
+            # 软约束加分：满足偏好条件的候选人获得额外分数
+            soft_match = bool(soft_constraint_ids and cid in soft_constraint_ids)
+            if soft_match:
+                base_score += SOFT_BOOST
             
             item = {
                 "candidate_id": cid,
                 "score": base_score,
                 "data": scores["data"],
                 "constraint_match": is_match,
+                "soft_match": soft_match,
             }
             
             if is_match:

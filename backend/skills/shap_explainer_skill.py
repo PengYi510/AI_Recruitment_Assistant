@@ -187,19 +187,45 @@ class SHAPExplainerSkill(BaseSkill):
 
     def _global_explanation(self, features: np.ndarray, active_features: List[str],
                             dynamic_scores: Dict[str, float] = None) -> Dict[str, Any]:
-        """Layer 1: 全局特征重要性（仅展示活跃特征，含动态特征）"""
-        full_importance = catboost_matcher.get_feature_importance()
-        # 仅保留活跃特征，并用中文名
+        """Layer 1: 全局特征重要性（基于 SHAP 贡献值，可正可负）
+
+        使用与 Layer 2 相同的 SHAP 计算逻辑，展示每个活跃特征的
+        SHAP 贡献值而非模型权重，确保正负方向一致。
+        """
+        dynamic_scores = dynamic_scores or {}
+
+        # 分离标准特征和动态特征
+        standard_features = [k for k in active_features if k in SHAP_FEATURE_KEYS]
+        dynamic_features = [k for k in active_features if k not in SHAP_FEATURE_KEYS]
+
+        # 标准特征的 SHAP 值（复用 individual_explanation 的计算逻辑）
+        active_indices = [SHAP_FEATURE_KEYS.index(k) for k in standard_features]
+        real_shap, real_base = catboost_matcher.compute_shap_values(features)
+        if real_shap is not None:
+            standard_shap = real_shap[active_indices]
+        else:
+            active_weights = np.array([self.ALL_WEIGHTS[k] for k in standard_features])
+            active_baselines = np.array([self.ALL_BASELINES[k] for k in standard_features])
+            active_values = features[active_indices]
+            standard_shap = (active_values - active_baselines) * active_weights
+
+        # 动态特征的 SHAP 值
+        dynamic_shap_list = []
+        for dk in dynamic_features:
+            meta = self._get_dynamic_feature_meta(dk)
+            score = dynamic_scores.get(dk, meta["baseline"])
+            shap_val = (score - meta["baseline"]) * meta["weight"]
+            dynamic_shap_list.append(shap_val)
+
+        # 构建中文名 → SHAP 值的映射
         importance = {}
-        for key in active_features:
-            if key in SHAP_FEATURE_NAMES_CN:
-                # 标准12维特征
-                cn_name = SHAP_FEATURE_NAMES_CN[key]
-                importance[cn_name] = full_importance.get(key, self.ALL_WEIGHTS.get(key, 0))
-            else:
-                # 动态特征
-                meta = self._get_dynamic_feature_meta(key)
-                importance[meta["cn_name"]] = meta["weight"]
+        for i, k in enumerate(standard_features):
+            cn_name = SHAP_FEATURE_NAMES_CN.get(k, k)
+            importance[cn_name] = float(standard_shap[i])
+        for i, dk in enumerate(dynamic_features):
+            meta = self._get_dynamic_feature_meta(dk)
+            importance[meta["cn_name"]] = dynamic_shap_list[i]
+
         if MPL_AVAILABLE:
             self._plot_global_importance(importance)
         return {"feature_importance": importance}
@@ -361,18 +387,35 @@ class SHAPExplainerSkill(BaseSkill):
                 "dynamic_feature_count": dynamic_count}
 
     def _plot_global_importance(self, importance: Dict[str, float]):
-        """绘制全局特征重要性柱状图（中文标签）"""
+        """绘制全局特征 SHAP 贡献柱状图（支持正负方向，中文标签）"""
         try:
             from matplotlib import rcParams
             rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']
             rcParams['axes.unicode_minus'] = False
 
-            plt.figure(figsize=(10, 6))
             names = list(importance.keys())
             values = list(importance.values())
-            plt.barh(names, values, color='steelblue')
-            plt.xlabel('特征重要性')
-            plt.title('全局特征重要性 (SHAP)')
+            # 按绝对值排序（小底大顶）
+            sorted_pairs = sorted(zip(names, values), key=lambda x: abs(x[1]))
+            names = [p[0] for p in sorted_pairs]
+            values = [p[1] for p in sorted_pairs]
+            # 正值红色，负值蓝色
+            colors = ['#D32F2F' if v >= 0 else '#1565C0' for v in values]
+
+            fig, ax = plt.subplots(figsize=(10, max(5, len(names) * 0.45 + 1.5)))
+            bars = ax.barh(names, values, color=colors, height=0.6, edgecolor='none')
+            # 在柱子末端标注数值
+            for bar, val in zip(bars, values):
+                offset = 0.003 if val >= 0 else -0.003
+                ha = 'left' if val >= 0 else 'right'
+                ax.text(bar.get_width() + offset, bar.get_y() + bar.get_height() / 2,
+                       f'{val:+.4f}', va='center', ha=ha, fontsize=8, fontweight='bold',
+                       color='#D32F2F' if val >= 0 else '#1565C0')
+            ax.axvline(x=0, color='#888888', linewidth=0.8, linestyle='-', zorder=1)
+            ax.set_xlabel('SHAP 贡献值（红色=正向，蓝色=负向）', fontsize=10)
+            ax.set_title('全局特征 SHAP 贡献', fontsize=13, fontweight='bold')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
             plt.tight_layout()
             plt.savefig(str(SHAP_DIR / 'global_importance.png'), dpi=150)
             plt.close()
@@ -474,8 +517,8 @@ class SHAPExplainerSkill(BaseSkill):
                            [y + bar_height * 0.5, y + 1 - bar_height * 0.5],
                            color='#AAAAAA', linewidth=0.7, linestyle='-', zorder=1)
 
-                # 数值标注（极小值不显示）
-                if abs_width >= 0.005:
+                # 数值标注（几乎所有特征均显示）
+                if abs_width >= 0.0001:
                     if width >= 0:
                         ax.text(end_x + 0.004, y, f'+{width:.2f}',
                                va='center', ha='left', fontsize=8, color='#D32F2F', fontweight='bold')
